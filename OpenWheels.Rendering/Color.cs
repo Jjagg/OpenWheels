@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace OpenWheels.GameTools
+namespace OpenWheels.Rendering
 {
     [StructLayout(LayoutKind.Explicit)]
     public struct Color

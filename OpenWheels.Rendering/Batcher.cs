@@ -1,18 +1,17 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 
-namespace OpenWheels.GameTools.Rendering
+namespace OpenWheels.Rendering
 {
     /// <summary>
-    /// <para>
+    /// <p>
     ///   A platform-agnostic renderer that batches draw operations.
     ///   Uses the primitive drawing operation of a <see cref="IRenderer"/> to abstract the graphics back end.
     ///   Provides operations to draw basic shape outlines or fill basic shapes.
-    /// </para>
-    /// <para>
+    /// </p>
+    /// <p>
     ///   <see cref="Batcher"/>, like the name implies, attempts to batch as many sequential drawing operations
     ///   as possible. Operations can be batched as long as you do not change the graphics state, the texture
     ///   or the scissor rectangle. The Batcher API is stateful. All graphics state is set in between draw calls.
@@ -22,15 +21,15 @@ namespace OpenWheels.GameTools.Rendering
     ///   <see cref="SetSprite(int,RectangleF)"/>. <seealso cref="Sprite"/>
     ///   Note that setting a sprite from the same texture will not finish a batch, since this just requires
     ///   to compute UV coordinates differently.
-    /// </para>
-    /// <para>
+    /// </p>
+    /// <p>
     ///   To abstract the texture and font representation, these data types are represented by an integer identifier.
     ///   For convenience the <see cref="IRenderer"/> can provide a string mapping to textures to allow users
     ///   to set textures by name using <see cref="SetTexture(string)"/> and <see cref="SetSprite(string,RectangleF)"/>.
-    /// </para>
-    /// <para>
+    /// </p>
+    /// <p>
     ///   Call <see cref="Finish"/> to send all queued batches to the <see cref="IRenderer"/> backend for actual rendering.
-    /// </para>
+    /// </p>
     /// </summary>
     // TODO: Maybe add support for having multiple buffers so we can sort draw operations in them by graphics state
     //       and reduce batch count. This adds complexity for 2D stuff, because most of the time we care about draw
@@ -56,6 +55,9 @@ namespace OpenWheels.GameTools.Rendering
         public const int DefaultMaxVertices = 2048;
         public const int DefaultMaxIndices = 4096;
 
+        /// <summary>
+        /// The renderer that actually executes the draw calls.
+        /// </summary>
         public IRenderer Renderer { get; set; }
 
         private readonly Vertex[] _vb;
@@ -67,15 +69,60 @@ namespace OpenWheels.GameTools.Rendering
         private int _verticesSubmitted;
 
         private readonly List<BatchInfo> _batches;
+        private Sprite _sprite;
+        private RectangleF _spriteUv;
 
-        public Matrix4x4 TransformMatrix { get; private set; } = Matrix4x4.Identity;
-        public Sprite Sprite { get; set; }
+        /// <summary>
+        /// Get or set the transformation matrix to apply to vertex positions.
+        /// </summary>
+        public Matrix4x4 TransformMatrix { get; set; } = Matrix4x4.Identity;
+
+        /// <summary>
+        /// Get or set the sprite to use for texturing.
+        /// </summary>
+        public Sprite Sprite
+        {
+            get => _sprite;
+            set
+            {
+                _sprite = value;
+                var texSize = Renderer.GetTextureSize(_sprite.Texture);
+                _spriteUv = new RectangleF(
+                    (float) _sprite.SrcRect.X / texSize.X,
+                    (float) _sprite.SrcRect.Y / texSize.Y,
+                    (float) _sprite.SrcRect.Width / texSize.X,
+                    (float) _sprite.SrcRect.Height / texSize.Y);
+            }
+        }
+
+        /// <summary>
+        /// Get or set the blend state.
+        /// </summary>
         public BlendState BlendState { get; set; }
+
+        /// <summary>
+        /// Get or set the depth/stencil state.
+        /// </summary>
         public DepthStencilState DepthState { get; set; }
+
+        /// <summary>
+        /// Get or set the rasterizer state.
+        /// </summary>
         public RasterizerState RasterizerState { get; set; }
+
+        /// <summary>
+        /// Get or set the sampler state.
+        /// </summary>
         public SamplerState SamplerState { get; set; }
+
+        /// <summary>
+        /// Get or set the scissor rectangle.
+        /// </summary>
         public Rectangle ScissorRect { get; set; }
         
+        /// <summary>
+        /// Number of <see cref="Flush"/> calls since the last <see cref="Clear"/> call.
+        /// </summary>
         public int BatchCount { get; private set; }
         
         /// <summary>
@@ -85,7 +132,19 @@ namespace OpenWheels.GameTools.Rendering
         /// needs to be changed.
         /// </summary>
         public object BatchData { get; set; }
+
+        /// <summary>
+        /// Create a <see cref="Batcher"/> with a <see cref="NullRenderer"/>.
+        /// </summary>
+        public Batcher()
+            : this(new NullRenderer())
+        {
+        }
         
+        /// <summary>
+        /// Create a batcher with a renderer.
+        /// </summary>
+        /// <param name="renderer">Renderer to execute draw calls.</param>
         public Batcher(IRenderer renderer)
         {
             Renderer = renderer;
@@ -98,42 +157,70 @@ namespace OpenWheels.GameTools.Rendering
         
         #region Set Texture and Matrix
 
-        public void SetMatrix(Matrix4x4 matrix)
-        {
-            TransformMatrix = matrix;
-        }
-
+        /// <summary>
+        /// Set <see cref="TransformMatrix"/> so the renderer draws to plan of the viewport of the renderer.
+        /// </summary>
         public void SetMatrix2D()
         {
             var vp = Renderer.GetViewport();
             TransformMatrix = Matrix4x4.CreateOrthographicOffCenter(0, vp.Width, vp.Height, 0, 0, 1);
         }
 
+        /// <summary>
+        /// Set the texture for fills.
+        /// </summary>
+        /// <param name="texture">Texture name.</param>
         public void SetTexture(string texture)
         {
+            if (texture == null)
+                throw new ArgumentNullException(nameof(texture));
             SetTexture(Renderer.GetTexture(texture));
         }
 
+        /// <summary>
+        /// Set the texture for fills by identifier.
+        /// </summary>
+        /// <param name="texture">Texture identifier.</param>
         public void SetTexture(int texture)
         {
             var size = Renderer.GetTextureSize(texture);
-            Sprite = new Sprite(texture, new RectangleF(0, 0, size.X, size.Y));
+            Sprite = new Sprite(texture, new Rectangle(0, 0, size.X, size.Y));
         }
 
-        public void SetSprite(string texture, RectangleF uvs)
+        /// <summary>
+        /// Set the sprite for fills.
+        /// </summary>
+        /// <param name="texture">Texture name.</param>
+        /// <param name="srcRect">Source rectangle of the sprite inside the texture.</param>
+        public void SetSprite(string texture, Rectangle srcRect)
         {
-            SetSprite(Renderer.GetTexture(texture), uvs);
+            if (texture == null)
+                throw new ArgumentNullException(nameof(texture));
+            SetSprite(Renderer.GetTexture(texture), srcRect);
         }
 
-        public void SetSprite(int texture, RectangleF uvs)
+        /// <summary>
+        /// Set the sprite for fills.
+        /// </summary>
+        /// <param name="texture">Texture identifier.</param>
+        /// <param name="srcRect">Source rectangle of the sprite inside the texture.</param>
+        public void SetSprite(int texture, Rectangle srcRect)
         {
-            Sprite = new Sprite(texture, uvs);
+            Sprite = new Sprite(texture, srcRect);
         }
-        
+
         #endregion
 
         #region Line
 
+        /// <summary>
+        /// Draw a line.
+        /// </summary>
+        /// <param name="p1">First point of the line.</param>
+        /// <param name="p2">Second point of the line.</param>
+        /// <param name="color">Color of the line.</param>
+        /// <param name="lineWidth">Stroke width of the line.</param>
+        /// <param name="uvRect">Uv rectangle inside the sprite to source. Probably not very useful for user code.</param>
         public void DrawLine(Vector2 p1, Vector2 p2, Color color, float lineWidth = 1, RectangleF? uvRect = null)
         {
             var d = Vector2.Normalize(p2 - p1);
@@ -148,6 +235,13 @@ namespace OpenWheels.GameTools.Rendering
             FillQuad(v1, v2, v3, v4);
         }
 
+        /// <summary>
+        /// Draw a line strip. Draws lines between subsequent passed points.
+        /// </summary>
+        /// <param name="points">The points on the line strip.</param>
+        /// <param name="color">Color of the line strip.</param>
+        /// <param name="lineWidth">Stroke width.</param>
+        /// <exception cref="Exception">If <paramref name="points"/> has less than 2 points.</exception>
         public void DrawLineStrip(IEnumerable<Vector2> points, Color color, float lineWidth = 1)
         {
             if (points.CountLessThan(2))
@@ -165,6 +259,13 @@ namespace OpenWheels.GameTools.Rendering
 
         #region Triangle
         
+        /// <summary>
+        /// Fill a triangle.
+        /// </summary>
+        /// <param name="v1">First point of the triangle.</param>
+        /// <param name="v2">Second point of the triangle.</param>
+        /// <param name="v3">Third point of the triangle.</param>
+        /// <param name="c">Color of the triangle.</param>
         public void FillTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color c)
         {
             FillTriangleStrip(Extensions.Yield(v1, v2, v3).Select(v => CreateVertex(v, Vector2.Zero, c)));
@@ -174,6 +275,12 @@ namespace OpenWheels.GameTools.Rendering
 
         #region Rectangle
 
+        /// <summary>
+        /// Draw the outline of a rectangle.
+        /// </summary>
+        /// <param name="rect">The bounds of the rectangle.</param>
+        /// <param name="color">Color of the outline.</param>
+        /// <param name="lineWidth">Stroke width.</param>
         public void DrawRect(RectangleF rect, Color color, float lineWidth = 1)
         {
             var p1 = new Vector2(rect.Left, rect.Top);
@@ -187,11 +294,36 @@ namespace OpenWheels.GameTools.Rendering
             DrawLine(p4, p1, color, lineWidth);
         }
 
+        /// <summary>
+        /// Draw the outline of a rectangle with rounded corners.
+        /// </summary>
+        /// <param name="rectangle">The outer bounds of the rectangle.</param>
+        /// <param name="radius">Radius of the corners.</param>
+        /// <param name="segments">Number of segments for triangulation of the corners.</param>
+        /// <param name="color">Color of the outline.</param>
+        /// <param name="lineWidth">Stroke width.</param>
         public void DrawRoundedRect(RectangleF rectangle, float radius, int segments, Color color, int lineWidth = 1)
         {
             DrawRoundedRect(rectangle, radius, segments, radius, segments, radius, segments, radius, segments, color, lineWidth);
         }
 
+        /// <summary>
+        /// Draw the outline of a rectangle with rounded corners.
+        /// </summary>
+        /// <param name="rectangle">The outer bounds of the rectangle.</param>
+        /// <param name="radiusTl">Radius of the top left corner.</param>
+        /// <param name="segmentsTl">Number of segments for triangulation for the top left corner.</param>
+        /// <param name="radiusTr">Radius of the top right corner.</param>
+        /// <param name="segmentsTr">Number of segments for triangulation for the top right corner.</param>
+        /// <param name="radiusBr">Radius of the bottom right corner.</param>
+        /// <param name="segmentsBr">Number of segments for triangulation for the bottom right corner.</param>
+        /// <param name="radiusBl">Radius of the bottom left corner.</param>
+        /// <param name="segmentsBl">Number of segments for triangulation for the bottom left corner.</param>
+        /// <param name="color">Color of the outline.</param>
+        /// <param name="lineWidth">Stroke width.</param>
+        /// <exception cref="Exception">
+        ///   If any of the radii is larger than half the width or height of the rectangle.
+        /// </exception>
         public void DrawRoundedRect(RectangleF rectangle,
             float radiusTl, int segmentsTl,
             float radiusTr, int segmentsTr,
@@ -232,6 +364,13 @@ namespace OpenWheels.GameTools.Rendering
                 DrawCircleSegment(bl, radiusBl, BotAngle, LeftAngle, color, segmentsBl, lineWidth);
         }
 
+        /// <summary>
+        /// Fill a quad.
+        /// </summary>
+        /// <param name="v0">The first vertex.</param>
+        /// <param name="v1">The second vertex.</param>
+        /// <param name="v2">The third vertex.</param>
+        /// <param name="v3">The fourth vertex.</param>
         public void FillQuad(Vertex v0, Vertex v1, Vertex v2, Vertex v3)
         {
             CheckFlush();
@@ -248,11 +387,26 @@ namespace OpenWheels.GameTools.Rendering
             AddIndex(i3);
         }
 
+        /// <summary>
+        /// Fill a rectangle.
+        /// </summary>
+        /// <param name="rect">Bounds of the rectangle.</param>
+        /// <param name="c">Color of the rectangle.</param>
+        /// <param name="uvRect">Uv rectangle inside the sprite to source. Probably not very useful for user code.</param>
         public void FillRect(RectangleF rect, Color c, RectangleF? uvRect = null)
         {
             FillRect(rect, c, c, c, c, uvRect);
         }
 
+        /// <summary>
+        /// Fill a rectangle. Interpolates colors between the corners.
+        /// </summary>
+        /// <param name="rect">Bounds of the rectangle.</param>
+        /// <param name="c1">Color of the top left corner.</param>
+        /// <param name="c2">Color of the top right corner.</param>
+        /// <param name="c3">Color of the bottom right corner.</param>
+        /// <param name="c4">Color of the bottom left corner.</param>
+        /// <param name="uvRect">Uv rectangle inside the sprite to source. Probably not very useful for user code.</param>
         public void FillRect(RectangleF rect, Color c1, Color c2, Color c3, Color c4, RectangleF? uvRect = null)
         {
             var r = uvRect ?? RectangleF.Unit;
@@ -264,6 +418,15 @@ namespace OpenWheels.GameTools.Rendering
             FillQuad(v1, v2, v3, v4);
         }
 
+        /// <summary>
+        /// Fill a rectangle with rounded corners.
+        /// </summary>
+        /// <param name="rectangle">Outer bounds of the rectangle.</param>
+        /// <param name="radius">Radius of the corners.</param>
+        /// <param name="segments">Number of segments to triangulate the corners.</param>
+        /// <param name="color">Color to fill with.</param>
+        /// <param name="uvRect">Uv rectangle inside the sprite to source. Probably not very useful for user code.</param>
+        /// <exception cref="Exception">If the radius is larger than half the width or height of the rectangle.</exception>
         public void FillRoundedRect(RectangleF rectangle, float radius, int segments, Color color, RectangleF? uvRect = null)
         {
             if (radius > rectangle.Width / 2f || radius > rectangle.Height / 2f)
@@ -316,22 +479,64 @@ namespace OpenWheels.GameTools.Rendering
         private const float RightEndAngle = (float) (2 * Math.PI);
         private const float BotAngle = (float) (.5 * Math.PI);
 
+        /// <summary>
+        /// Draw the outline of a circle segment.
+        /// </summary>
+        /// <param name="center">Center of the circle.</param>
+        /// <param name="radius">Radius of the circle.</param>
+        /// <param name="color">Color of the circle.</param>
+        /// <param name="sides">Number of sides to the circle for triangulation.</param>
+        /// <param name="lineWidth">Stroke width of the outline.</param>
         public void DrawCircle(Vector2 center, float radius, Color color, int sides, float lineWidth = 1)
         {
             DrawCircleSegment(center, radius, RightStartAngle, RightEndAngle, color, sides, lineWidth);
         }
 
+        /// <summary>
+        /// Draw the outline of a circle segment.
+        /// </summary>
+        /// <param name="center">Center of the circle.</param>
+        /// <param name="radius">Radius of the circle.</param>
+        /// <param name="start">Start angle of the segment in radians. Angle of 0 is right (positive x-axis).</param>
+        /// <param name="end">End angle of the segment in radians.</param>
+        /// <param name="color">Color of the circle segment.</param>
+        /// <param name="sides">Number of sides to the circle for triangulation.</param>
+        /// <param name="lineWidth">Stroke width of the outline.</param>
         public void DrawCircleSegment(Vector2 center, float radius, float start, float end, Color color, int sides, float lineWidth = 1)
         {
             var ps = CreateCircleSegment(center, radius, sides, start, end);
             DrawLineStrip(ps, color, lineWidth);
         }
 
+        /// <summary>
+        /// Fill a circle.
+        /// </summary>
+        /// <param name="center">Center of the circle.</param>
+        /// <param name="radius">Radius of the circle.</param>
+        /// <param name="color">Color of the circle.</param>
+        /// <param name="sides">Number of sides to the circle for triangulation.</param>
+        /// <param name="uvRect">
+        ///   The rectangle inside the sprite to source uv coordinates from.
+        ///   Probably not very useful for user code.
+        /// </param>
         public void FillCircle(Vector2 center, float radius, Color color, int sides, RectangleF? uvRect = null)
         {
             FillCircleSegment(center, radius, RightStartAngle, RightEndAngle, color, sides, uvRect);
         }
 
+        /// <summary>
+        /// Fill a circle segment.
+        /// </summary>
+        /// <param name="center">Center of the circle.</param>
+        /// <param name="radius">Radius of the circle.</param>
+        /// <param name="start">Start angle of the segment in radians. Angle of 0 is right (positive x-axis).</param>
+        /// <param name="end">End angle of the segment in radians.</param>
+        /// <param name="color">Color of the circle segment.</param>
+        /// <param name="sides">Number of sides to the circle for triangulation.</param>
+        /// <param name="uvRect">
+        ///   The rectangle inside the sprite to source uv coordinates from.
+        ///   Probably not very useful for user code.
+        /// </param>
         public void FillCircleSegment(Vector2 center, float radius, float start, float end, Color color, int sides, RectangleF? uvRect = null)
         {
             var ps = CreateCircleSegment(center, radius, sides, start, end);
@@ -360,10 +565,10 @@ namespace OpenWheels.GameTools.Rendering
         #region Low level
 
         /// <summary>
-        /// Fill a triangle strip
+        /// Fill a triangle strip.
         /// </summary>
-        /// <param name="ps"></param>
-        /// <exception cref="Exception"></exception>
+        /// <param name="ps">Vertices of the triangle strip.</param>
+        /// <exception cref="Exception">If less than 3 vertices are passed.</exception>
         public void FillTriangleStrip(IEnumerable<Vertex> ps)
         {
             CheckFlush();
@@ -390,11 +595,17 @@ namespace OpenWheels.GameTools.Rendering
             }
         }
 
-        protected void FillTriangleFan(Vertex center, IEnumerable<Vertex> vs)
+        /// <summary>
+        /// Fill a triangle fan.
+        /// </summary>
+        /// <param name="center">The center vertex.</param>
+        /// <param name="vs">The other vertices.</param>
+        /// <exception cref="Exception">If <paramref name="vs"/> has less than 2 vertices.</exception>
+        public void FillTriangleFan(Vertex center, IEnumerable<Vertex> vs)
         {
             CheckFlush();
 
-            if (vs.CountLessThan(3))
+            if (vs.CountLessThan(2))
                 throw new Exception("Need at least 3 vertices for a triangle fan.");
 
             using (var en = vs.GetEnumerator())
@@ -452,7 +663,7 @@ namespace OpenWheels.GameTools.Rendering
                 Renderer.DrawBatch(batch.GraphicsState, _vb, _ib, batch.Startindex, batch.IndexCount, batch.UserData);
         }
 
-        protected void CheckFlush()
+        private void CheckFlush()
         {
             var gs = CreateCurrentGraphicsState();
             if (!_lastGraphicsState.Equals(gs))
@@ -481,23 +692,25 @@ namespace OpenWheels.GameTools.Rendering
 
         #endregion
 
-        protected static Vertex CreateVertex(Vector2 p, Vector2 uv, Color c)
+        private Vertex CreateVertex(Vector2 p, Vector2 uv, Color c)
         {
+            // remap uv from unit rectangle to the uv rectangle of our sprite
+            var actualUv = MathHelper.LinearMap(uv, RectangleF.Unit, _spriteUv);
             var v3 = new Vector3(p.X, p.Y, 0);
             return new Vertex(v3, uv, c);
         }
 
-        protected int AddVertex(Vector2 position, Color color)
+        private int AddVertex(Vector2 position, Color color)
         {
             return AddVertex(CreateVertex(position, Vector2.Zero, color));
         }
 
-        protected int AddVertex(Vector2 position, Color color, Vector2 uv)
+        private int AddVertex(Vector2 position, Color color, Vector2 uv)
         {
             return AddVertex(CreateVertex(position, uv, color));
         }
 
-        protected int AddVertex(Vertex v)
+        private int AddVertex(Vertex v)
         {
             TransformVertexPosition(ref v, TransformMatrix);
             var i = _verticesSubmitted;
@@ -506,7 +719,7 @@ namespace OpenWheels.GameTools.Rendering
             return i;
         }
 
-        protected void AddIndex(int index)
+        private void AddIndex(int index)
         {
             var i = _nextToDraw + _indicesInBatch;
             _ib[i] = index;

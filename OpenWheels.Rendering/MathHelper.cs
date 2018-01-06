@@ -1,13 +1,24 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 
-namespace OpenWheels.GameTools
+namespace OpenWheels.Rendering
 {
     public static class MathHelper
     {
+        /// <summary>
+        /// Two times <see cref="System.Math.PI"/>.
+        /// </summary>
         public const float TwoPi = (float) (2 * System.Math.PI);
+
+        /// <summary>
+        /// <code>1 / <see cref="System.Math.PI"/></code>
+        /// </summary>
         public const float InvPi = (float) (1 / System.Math.PI);
-        public const float InvTwoPi = InvPi / 2;
+
+        /// <summary>
+        /// <code>1f / <see cref="TwoPi"/></code>
+        /// </summary>
+        public const float InvTwoPi = 1f / TwoPi;
 
         /// <summary>
         ///   Convert the given angle in radians to degrees.

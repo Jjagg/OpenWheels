@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace OpenWheels.GameTools.Rendering
+namespace OpenWheels.Rendering
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct Vertex

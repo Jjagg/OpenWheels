@@ -1,4 +1,4 @@
-﻿namespace OpenWheels.GameTools
+﻿namespace OpenWheels.Rendering
 {
     /// <summary>
     /// An immutable value type representing a point with an integer x and y coordinate.

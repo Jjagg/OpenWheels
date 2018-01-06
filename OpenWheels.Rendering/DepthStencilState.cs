@@ -1,4 +1,4 @@
-﻿namespace OpenWheels.GameTools.Rendering
+﻿namespace OpenWheels.Rendering
 {
     public enum DepthStencilState
     {

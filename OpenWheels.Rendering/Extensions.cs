@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace OpenWheels.GameTools
+namespace OpenWheels.Rendering
 {
     public static class Extensions
     {
