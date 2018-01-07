@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 
-namespace OpenWheels.Rendering
+namespace OpenWheels
 {
     public static class MathHelper
     {

@@ -1,8 +1,9 @@
 ﻿#if NETSTANDARD2_0
 using System.Diagnostics.Contracts;
+
 #endif
 
-namespace OpenWheels.Rendering
+namespace OpenWheels
 {
     /// <summary>
     /// An immutable value type representing a point with an integer x and y coordinate.

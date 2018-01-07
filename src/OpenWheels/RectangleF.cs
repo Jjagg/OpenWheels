@@ -1,105 +1,106 @@
 ﻿using System.Collections.Generic;
+using System.Numerics;
 
-namespace OpenWheels.Rendering
+namespace OpenWheels
 {
     /// <summary>
-    /// Value type representing a rectangle with integer coordinates.
+    /// Value type representing a rectangle with float coordinates.
     /// </summary>
-    public struct Rectangle
+    public struct RectangleF
     {
         /// <summary>
         /// Rectangle with position and size of (0, 0).
         /// </summary>
-        public static readonly Rectangle Empty = new Rectangle();
+        public static readonly RectangleF Empty = new RectangleF();
 
         /// <summary>
         /// Rectangle with position (0, 0) and size (1, 1)
         /// </summary>
-        public static readonly Rectangle Unit = new Rectangle(0, 0, 1, 1);
+        public static readonly RectangleF Unit = new RectangleF(0, 0, 1, 1);
         
         /// <summary>
-        /// X coordinate of the rectangle.
+        /// X coordinate of the top left of the rectangle.
         /// </summary>
-        public readonly int X;
- 
+        public readonly float X;
+
         /// <summary>
-        /// Y coordinate of the rectangle.
+        /// Y coordinate of the top left of the rectangle.
         /// </summary>
-        public readonly int Y;
+        public readonly float Y;
 
         /// <summary>
         /// Width of the rectangle.
         /// </summary>
-        public readonly int Width;
+        public readonly float Width;
 
         /// <summary>
         /// Height of the rectangle.
         /// </summary>
-        public readonly int Height;
+        public readonly float Height;
 
         /// <summary>
-        /// Top of the rectangle. Same as <see cref="Y"/>.
+        /// Top of the rectangle. Equal to <see cref="Y"/>.
         /// </summary>
-        public int Top => Y;
+        public float Top => Y;
 
         /// <summary>
         /// Bottom of the rectangle. Equal to <code><see cref="Y"/> + <see cref="Height"/></code>.
         /// </summary>
-        public int Bottom => Y + Height;
+        public float Bottom => Y + Height;
 
         /// <summary>
         /// Left of the rectangle. Same as <see cref="X"/>.
         /// </summary>
-        public int Left => X;
+        public float Left => X;
 
         /// <summary>
         /// Right of the rectangle. Equal to <code><see cref="X"/> + <see cref="Width"/></code>.
         /// </summary>
-        public int Right => X + Width;
+        public float Right => X + Width;
 
         /// <summary>
         /// Location of the top left corner of the rectangle.
         /// </summary>
-        public Point2 TopLeft => new Point2(Left, Top);
+        public Vector2 TopLeft => new Vector2(Left, Top);
         
         /// <summary>
         /// Location of the top right corner of the rectangle.
         /// </summary>
-        public Point2 TopRight => new Point2(Right, Top);
+        public Vector2 TopRight => new Vector2(Right, Top);
 
         /// <summary>
         /// Location of the bottom right corner of the rectangle.
         /// </summary>
-        public Point2 BottomRight => new Point2(Right, Bottom);
+        public Vector2 BottomRight => new Vector2(Right, Bottom);
 
         /// <summary>
         /// Location of the bottom left corner of the rectangle.
         /// </summary>
-        public Point2 BottomLeft => new Point2(Left, Bottom);
+        public Vector2 BottomLeft => new Vector2(Left, Bottom);
         
         /// <summary>
         /// Center of the rectangle.
         /// </summary>
-        public Point2 Center => new Point2(X + Width / 2, Y + Height / 2);
+        public Vector2 Center => new Vector2(X + Width / 2, Y + Height / 2);
 
         /// <summary>
         /// Size of the rectangle.
         /// </summary>
-        public Point2 Size => new Point2(Width, Height);
+        public Vector2 Size => new Vector2(Width, Height);
 
         /// <summary>
         /// Half of the size of the rectangle.
         /// </summary>
-        public Point2 HalfExtents => new Point2(Width / 2, Height / 2);
+        public Vector2 HalfExtents => new Vector2(Width / 2, Height / 2);
 
         /// <summary>
         /// Create a rectangle.
         /// </summary>
-        /// <param name="x">X coordinate of the rectangle.</param>
-        /// <param name="y">Y coordinate of the rectangle.</param>
+        /// <param name="x">X coordinate of the top left of the rectangle.</param>
+        /// <param name="y">Y coordinate of the top left of the rectangle.</param>
         /// <param name="width">Width of the rectangle.</param>
         /// <param name="height">Height of the rectangle.</param>
-        public Rectangle(int x, int y, int width, int height)
+        public RectangleF(float x, float y, float width, float height)
         {
             X = x;
             Y = y;
@@ -112,7 +113,7 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="pos">Coordinates of the top left point of the rectangle.</param>
         /// <param name="size">Size of the rectangle.</param>
-        public Rectangle(Point2 pos, Point2 size)
+        public RectangleF(Vector2 pos, Vector2 size)
             : this(pos.X, pos.Y, size.X, size.Y)
         {
         }
@@ -120,7 +121,7 @@ namespace OpenWheels.Rendering
         /// <summary>
         /// Get the corners of the rectangle. Order is top left, top right, bottom right, bottom left.
         /// </summary>
-        public IEnumerable<Point2> GetPoints()
+        public IEnumerable<Vector2> GetPoints()
         {
             yield return TopLeft;
             yield return TopRight;
@@ -133,7 +134,7 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="v">Amount to inflate the rectangle at the four sides.</param>
         /// <remarks>A negative value can be passed. This create a shrinked rectangle.</remarks>
-        public Rectangle Inflate(int v)
+        public RectangleF Inflate(float v)
         {
             return Inflate(v, v);
         }
@@ -144,15 +145,11 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="h">Amount to inflate the rectangle at the left and right sides.</param>
         /// <param name="v">Amount to inflate the rectangle at the top and bottom sides.</param>
-        /// <remarks>A negative value can be passed. This create a shrinked rectangle.</remarks>
-#if NETSTANDARD2_0
-        [Pure]
-#endif
-        public Rectangle Inflate(int h, int v)
+        public RectangleF Inflate(float h, float v)
         {
             var halfH = h / 2;
             var halfV = v / 2;
-            return new Rectangle(X - halfH, Y - halfV, Width + h, Height + v);
+            return new RectangleF(X - halfH, Y - halfV, Width + h, Height + v);
         }
 
         /// <summary>
@@ -160,9 +157,9 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="tl">Top left of the rectangle.</param>
         /// <param name="br">Bottom right of the rectangle.</param>
-        public static Rectangle FromExtremes(Point2 tl, Point2 br)
+        public static RectangleF FromExtremes(Vector2 tl, Vector2 br)
         {
-            return new Rectangle(tl, br - tl);
+            return new RectangleF(tl, br - tl);
         }
 
         /// <summary>
@@ -170,54 +167,40 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="center">Center of the rectangle.</param>
         /// <param name="halfExtents">Half of the size of the rectangle.</param>
-        public static Rectangle FromHalfExtents(Point2 center, Point2 halfExtents)
+        public static RectangleF FromHalfExtents(Vector2 center, Vector2 halfExtents)
         {
-            return new Rectangle(center - halfExtents, halfExtents * 2);
+            return new RectangleF(center - halfExtents, halfExtents * 2);
         }
 
-        public void Deconstruct(out int x, out int y, out int width, out int height)
+        public bool Equals(RectangleF other)
         {
-            x = X;
-            y = Y;
-            width = Width;
-            height = Height;
-        }
-
-        public void Deconstruct(out Point2 position, out Point2 size)
-        {
-            position = TopLeft;
-            size = Size;
-        }
-
-        public bool Equals(Rectangle other)
-        {
-            return X == other.X && Y == other.Y && Width == other.Width && Height == other.Height;
+            return X.Equals(other.X) && Y.Equals(other.Y) && Width.Equals(other.Width) && Height.Equals(other.Height);
         }
 
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            return obj is Rectangle && Equals((Rectangle) obj);
+            return obj is RectangleF && Equals((RectangleF) obj);
         }
 
         public override int GetHashCode()
         {
             unchecked
             {
-                var hashCode = X;
-                hashCode = (hashCode * 397) ^ Y;
-                hashCode = (hashCode * 397) ^ Width;
-                hashCode = (hashCode * 397) ^ Height;
+                var hashCode = X.GetHashCode();
+                hashCode = (hashCode * 397) ^ Y.GetHashCode();
+                hashCode = (hashCode * 397) ^ Width.GetHashCode();
+                hashCode = (hashCode * 397) ^ Height.GetHashCode();
                 return hashCode;
             }
         }
 
-        public static bool operator ==(Rectangle left, Rectangle right)
+        public static bool operator ==(RectangleF left, RectangleF right)
         {
             return left.Equals(right);
         }
 
-        public static bool operator !=(Rectangle left, Rectangle right)
+        public static bool operator !=(RectangleF left, RectangleF right)
         {
             return !left.Equals(right);
         }

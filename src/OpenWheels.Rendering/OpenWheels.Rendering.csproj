@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard1.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Numerics.Vectors" Version="4.4.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OpenWheels\OpenWheels.csproj" />
+  </ItemGroup>
+  <PropertyGroup>
+    <Description>Backend-agnostic 2D geometry batcher for GPU rendering.</Description>
+    <PackageTags>2D Graphics Rendering</PackageTags>
+  </PropertyGroup>
+</Project>

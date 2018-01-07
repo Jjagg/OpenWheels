@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace OpenWheels.Rendering
+namespace OpenWheels
 {
     /// <summary>
     /// Value type representing an ABGR color with 1 byte per channel (values in [0-255]).
