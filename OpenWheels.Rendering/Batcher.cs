@@ -18,17 +18,19 @@ namespace OpenWheels.Rendering
     ///   You can change the graphics state by setting the properties 
     ///   <see cref="BlendState"/>, <see cref="DepthState"/>, <see cref="RasterizerState"/> and 
     ///   <see cref="SamplerState"/>. You can set the texture by calling <see cref="SetTexture(int)"/> or 
-    ///   <see cref="SetSprite(int,RectangleF)"/>. <seealso cref="Sprite"/>
+    ///   <see cref="SetSprite(int,Rectangle)"/>. <seealso cref="Sprite"/>
     ///   Note that setting a sprite from the same texture will not finish a batch, since this just requires
     ///   to compute UV coordinates differently.
     /// </p>
     /// <p>
     ///   To abstract the texture and font representation, these data types are represented by an integer identifier.
-    ///   For convenience the <see cref="IRenderer"/> can provide a string mapping to textures to allow users
-    ///   to set textures by name using <see cref="SetTexture(string)"/> and <see cref="SetSprite(string,RectangleF)"/>.
     /// </p>
     /// <p>
     ///   Call <see cref="Finish"/> to send all queued batches to the <see cref="IRenderer"/> backend for actual rendering.
+    /// </p>
+    /// <p>
+    ///   All 2D drawing operations generate vertices in the XY-plane. They can be remapped to
+    ///   the desired plane (if necessary) by using the <see cref="TransformMatrix"/>.
     /// </p>
     /// </summary>
     // TODO: Maybe add support for having multiple buffers so we can sort draw operations in them by graphics state
@@ -58,7 +60,16 @@ namespace OpenWheels.Rendering
         /// <summary>
         /// The renderer that actually executes the draw calls.
         /// </summary>
-        public IRenderer Renderer { get; set; }
+        public IRenderer Renderer
+        {
+            get => _renderer;
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+                _renderer = value;
+            }
+        }
 
         private readonly Vertex[] _vb;
         private readonly int[] _ib;
@@ -71,6 +82,12 @@ namespace OpenWheels.Rendering
         private readonly List<BatchInfo> _batches;
         private Sprite _sprite;
         private RectangleF _spriteUv;
+        private IRenderer _renderer;
+        private BlendState _blendState;
+        private DepthStencilState _depthState;
+        private RasterizerState _rasterizerState;
+        private SamplerState _samplerState;
+        private Rectangle _scissorRect;
 
         /// <summary>
         /// Get or set the transformation matrix to apply to vertex positions.
@@ -85,6 +102,8 @@ namespace OpenWheels.Rendering
             get => _sprite;
             set
             {
+                if (value.Texture != _lastGraphicsState.Texture)
+                    Flush();
                 _sprite = value;
                 var texSize = Renderer.GetTextureSize(_sprite.Texture);
                 _spriteUv = new RectangleF(
@@ -98,28 +117,73 @@ namespace OpenWheels.Rendering
         /// <summary>
         /// Get or set the blend state.
         /// </summary>
-        public BlendState BlendState { get; set; }
+        public BlendState BlendState
+        {
+            get => _blendState;
+            set
+            {
+                if (_blendState != value)
+                    Flush();
+                _blendState = value;
+            }
+        }
 
         /// <summary>
         /// Get or set the depth/stencil state.
         /// </summary>
-        public DepthStencilState DepthState { get; set; }
+        public DepthStencilState DepthState
+        {
+            get { return _depthState; }
+            set
+            {
+                if (_depthState != value)
+                    Flush();
+                _depthState = value;
+            }
+        }
 
         /// <summary>
         /// Get or set the rasterizer state.
         /// </summary>
-        public RasterizerState RasterizerState { get; set; }
+        public RasterizerState RasterizerState
+        {
+            get => _rasterizerState;
+            set
+            {
+                if (_rasterizerState != value)
+                    Flush();
+                _rasterizerState = value;
+            }
+        }
 
         /// <summary>
         /// Get or set the sampler state.
         /// </summary>
-        public SamplerState SamplerState { get; set; }
+        public SamplerState SamplerState
+        {
+            get => _samplerState;
+            set
+            {
+                if (_samplerState != value)
+                    Flush();
+                _samplerState = value;
+            }
+        }
 
         /// <summary>
         /// Get or set the scissor rectangle.
         /// </summary>
-        public Rectangle ScissorRect { get; set; }
-        
+        public Rectangle ScissorRect
+        {
+            get => _scissorRect;
+            set
+            {
+                if (_scissorRect != value)
+                    Flush();
+                _scissorRect = value;
+            }
+        }
+
         /// <summary>
         /// Number of <see cref="Flush"/> calls since the last <see cref="Clear"/> call.
         /// </summary>
@@ -128,13 +192,13 @@ namespace OpenWheels.Rendering
         /// <summary>
         /// The value of this property is attached to a batch when it is finished.
         /// Can be used for custom rendering in combination with <see cref="Flush"/>
-        /// to force finishing a batch when graphics state unknown to <see cref="Batcher"/>
+        /// to force finishing a batch when graphics state unknown to <see cref="Batcher{Vertex}"/>
         /// needs to be changed.
         /// </summary>
         public object BatchData { get; set; }
 
         /// <summary>
-        /// Create a <see cref="Batcher"/> with a <see cref="NullRenderer"/>.
+        /// Create a <see cref="Batcher{Vertex}"/> with a <see cref="NullRenderer{Vertex}"/>.
         /// </summary>
         public Batcher()
             : this(new NullRenderer())
@@ -158,7 +222,7 @@ namespace OpenWheels.Rendering
         #region Set Texture and Matrix
 
         /// <summary>
-        /// Set <see cref="TransformMatrix"/> so the renderer draws to plan of the viewport of the renderer.
+        /// Set <see cref="TransformMatrix"/> so the renderer draws to the plane of the viewport of the renderer.
         /// </summary>
         public void SetMatrix2D()
         {
@@ -169,34 +233,11 @@ namespace OpenWheels.Rendering
         /// <summary>
         /// Set the texture for fills.
         /// </summary>
-        /// <param name="texture">Texture name.</param>
-        public void SetTexture(string texture)
-        {
-            if (texture == null)
-                throw new ArgumentNullException(nameof(texture));
-            SetTexture(Renderer.GetTexture(texture));
-        }
-
-        /// <summary>
-        /// Set the texture for fills by identifier.
-        /// </summary>
         /// <param name="texture">Texture identifier.</param>
         public void SetTexture(int texture)
         {
             var size = Renderer.GetTextureSize(texture);
             Sprite = new Sprite(texture, new Rectangle(0, 0, size.X, size.Y));
-        }
-
-        /// <summary>
-        /// Set the sprite for fills.
-        /// </summary>
-        /// <param name="texture">Texture name.</param>
-        /// <param name="srcRect">Source rectangle of the sprite inside the texture.</param>
-        public void SetSprite(string texture, Rectangle srcRect)
-        {
-            if (texture == null)
-                throw new ArgumentNullException(nameof(texture));
-            SetSprite(Renderer.GetTexture(texture), srcRect);
         }
 
         /// <summary>
@@ -373,8 +414,6 @@ namespace OpenWheels.Rendering
         /// <param name="v3">The fourth vertex.</param>
         public void FillQuad(Vertex v0, Vertex v1, Vertex v2, Vertex v3)
         {
-            CheckFlush();
-
             var i1 = AddVertex(v0);
             var i2 = AddVertex(v1);
             var i3 = AddVertex(v2);
@@ -441,7 +480,7 @@ namespace OpenWheels.Rendering
             var ur = uvRect ?? RectangleF.Unit;
             var outerRect = rectangle;
             var innerRect = rectangle;
-            innerRect = innerRect.Inflate(-radius, -radius);
+            innerRect = innerRect.Inflate(-2 * radius, -2 * radius);
 
             FillRect(innerRect, color, MathHelper.LinearMap(innerRect, outerRect, ur));
 
@@ -571,8 +610,6 @@ namespace OpenWheels.Rendering
         /// <exception cref="Exception">If less than 3 vertices are passed.</exception>
         public void FillTriangleStrip(IEnumerable<Vertex> ps)
         {
-            CheckFlush();
-
             if (ps.CountLessThan(3))
                 throw new Exception("Need at least 3 vertices for a triangle strip.");
 
@@ -603,8 +640,6 @@ namespace OpenWheels.Rendering
         /// <exception cref="Exception">If <paramref name="vs"/> has less than 2 vertices.</exception>
         public void FillTriangleFan(Vertex center, IEnumerable<Vertex> vs)
         {
-            CheckFlush();
-
             if (vs.CountLessThan(2))
                 throw new Exception("Need at least 3 vertices for a triangle fan.");
 
@@ -665,11 +700,12 @@ namespace OpenWheels.Rendering
 
         private void CheckFlush()
         {
+            if (_indicesInBatch == 0 && BatchData == null)
+                return;
+
             var gs = CreateCurrentGraphicsState();
             if (!_lastGraphicsState.Equals(gs))
-                Flush();
-
-            _lastGraphicsState = gs;
+                Flush(gs);
         }
 
         /// <summary>
@@ -677,11 +713,18 @@ namespace OpenWheels.Rendering
         /// </summary>
         public void Flush()
         {
+            var gs = CreateCurrentGraphicsState();
+            Flush(gs);
+        }
+
+        private void Flush(GraphicsState gs)
+        {
+            _lastGraphicsState = gs;
             // if nothing to flush
             if (_indicesInBatch == 0 && BatchData == null)
                 return;
 
-            var bi = new BatchInfo(_lastGraphicsState, _nextToDraw, _indicesInBatch, BatchData);
+            var bi = new BatchInfo(gs, _nextToDraw, _indicesInBatch, BatchData);
             _batches.Add(bi);
 
             _nextToDraw = _nextToDraw + _indicesInBatch;
@@ -697,7 +740,7 @@ namespace OpenWheels.Rendering
             // remap uv from unit rectangle to the uv rectangle of our sprite
             var actualUv = MathHelper.LinearMap(uv, RectangleF.Unit, _spriteUv);
             var v3 = new Vector3(p.X, p.Y, 0);
-            return new Vertex(v3, uv, c);
+            return new Vertex(v3, actualUv, c);
         }
 
         private int AddVertex(Vector2 position, Color color)

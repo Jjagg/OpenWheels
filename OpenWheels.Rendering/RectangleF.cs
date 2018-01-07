@@ -84,7 +84,7 @@ namespace OpenWheels.Rendering
         public Vector2 Center => new Vector2(X + Width / 2, Y + Height / 2);
 
         /// <summary>
-        /// The size of the rectangle.
+        /// Size of the rectangle.
         /// </summary>
         public Vector2 Size => new Vector2(Width, Height);
 
@@ -96,10 +96,10 @@ namespace OpenWheels.Rendering
         /// <summary>
         /// Create a rectangle.
         /// </summary>
-        /// <param name="x">The x coordinate of the top left of the rectangle.</param>
-        /// <param name="y">The y coordinate of the top left of the rectangle.</param>
-        /// <param name="width">The width of the rectangle.</param>
-        /// <param name="height">The height of the rectangle.</param>
+        /// <param name="x">X coordinate of the top left of the rectangle.</param>
+        /// <param name="y">Y coordinate of the top left of the rectangle.</param>
+        /// <param name="width">Width of the rectangle.</param>
+        /// <param name="height">Height of the rectangle.</param>
         public RectangleF(float x, float y, float width, float height)
         {
             X = x;
@@ -112,7 +112,7 @@ namespace OpenWheels.Rendering
         /// Create a new rectangle.
         /// </summary>
         /// <param name="pos">Coordinates of the top left point of the rectangle.</param>
-        /// <param name="size">The size of the rectangle.</param>
+        /// <param name="size">Size of the rectangle.</param>
         public RectangleF(Vector2 pos, Vector2 size)
             : this(pos.X, pos.Y, size.X, size.Y)
         {
@@ -130,31 +130,33 @@ namespace OpenWheels.Rendering
         }
 
         /// <summary>
-        /// Create a rectangle with the same center, but <paramref name="v"/> larger than this rectangle.
+        /// Create a rectangle with the same center, but expanded by <paramref name="v"/> at all sides.
         /// </summary>
-        /// <param name="v">Amount to inflate the rectangle.</param>
+        /// <param name="v">Amount to inflate the rectangle at the four sides.</param>
+        /// <remarks>A negative value can be passed. This create a shrinked rectangle.</remarks>
         public RectangleF Inflate(float v)
         {
             return Inflate(v, v);
         }
 
-
         /// <summary>
-        /// Create a rectangle with the same center, but expanded by <paramref name="h"/> in the horizontal
-        /// direction and <paramref name="v"/> in the vertical direction.
+        /// Create a rectangle with the same center, but expanded by <paramref name="h"/> at the horizontal sides
+        /// and by <paramref name="v"/> at the vertical sides.
         /// </summary>
-        /// <param name="h">Amount to inflate the rectangle in the horizontal direction.</param>
-        /// <param name="v">Amount to inflate the rectangle in the vertical direction.</param>
+        /// <param name="h">Amount to inflate the rectangle at the left and right sides.</param>
+        /// <param name="v">Amount to inflate the rectangle at the top and bottom sides.</param>
         public RectangleF Inflate(float h, float v)
         {
-            return new RectangleF(X - h, Y - v, Width + h * 2, Height + v * 2);
+            var halfH = h / 2;
+            var halfV = v / 2;
+            return new RectangleF(X - halfH, Y - halfV, Width + h, Height + v);
         }
 
         /// <summary>
         /// Create a rectangle.
         /// </summary>
-        /// <param name="tl">The top left of the rectangle.</param>
-        /// <param name="br">The bottom right of the rectangle.</param>
+        /// <param name="tl">Top left of the rectangle.</param>
+        /// <param name="br">Bottom right of the rectangle.</param>
         public static RectangleF FromExtremes(Vector2 tl, Vector2 br)
         {
             return new RectangleF(tl, br - tl);
@@ -163,7 +165,7 @@ namespace OpenWheels.Rendering
         /// <summary>
         /// Create a rectangle.
         /// </summary>
-        /// <param name="center">The center of the rectangle.</param>
+        /// <param name="center">Center of the rectangle.</param>
         /// <param name="halfExtents">Half of the size of the rectangle.</param>
         public static RectangleF FromHalfExtents(Vector2 center, Vector2 halfExtents)
         {

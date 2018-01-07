@@ -1,4 +1,6 @@
-﻿namespace OpenWheels.Rendering
+﻿using System.Collections.Generic;
+
+namespace OpenWheels.Rendering
 {
     /// <summary>
     /// Value type representing a rectangle with integer coordinates.
@@ -56,6 +58,41 @@
         public int Right => X + Width;
 
         /// <summary>
+        /// Location of the top left corner of the rectangle.
+        /// </summary>
+        public Point2 TopLeft => new Point2(Left, Top);
+        
+        /// <summary>
+        /// Location of the top right corner of the rectangle.
+        /// </summary>
+        public Point2 TopRight => new Point2(Right, Top);
+
+        /// <summary>
+        /// Location of the bottom right corner of the rectangle.
+        /// </summary>
+        public Point2 BottomRight => new Point2(Right, Bottom);
+
+        /// <summary>
+        /// Location of the bottom left corner of the rectangle.
+        /// </summary>
+        public Point2 BottomLeft => new Point2(Left, Bottom);
+        
+        /// <summary>
+        /// Center of the rectangle.
+        /// </summary>
+        public Point2 Center => new Point2(X + Width / 2, Y + Height / 2);
+
+        /// <summary>
+        /// Size of the rectangle.
+        /// </summary>
+        public Point2 Size => new Point2(Width, Height);
+
+        /// <summary>
+        /// Half of the size of the rectangle.
+        /// </summary>
+        public Point2 HalfExtents => new Point2(Width / 2, Height / 2);
+
+        /// <summary>
         /// Create a rectangle.
         /// </summary>
         /// <param name="x">X coordinate of the rectangle.</param>
@@ -68,6 +105,88 @@
             Y = y;
             Width = width;
             Height = height;
+        }
+
+        /// <summary>
+        /// Create a new rectangle.
+        /// </summary>
+        /// <param name="pos">Coordinates of the top left point of the rectangle.</param>
+        /// <param name="size">Size of the rectangle.</param>
+        public Rectangle(Point2 pos, Point2 size)
+            : this(pos.X, pos.Y, size.X, size.Y)
+        {
+        }
+
+        /// <summary>
+        /// Get the corners of the rectangle. Order is top left, top right, bottom right, bottom left.
+        /// </summary>
+        public IEnumerable<Point2> GetPoints()
+        {
+            yield return TopLeft;
+            yield return TopRight;
+            yield return BottomRight;
+            yield return BottomLeft;
+        }
+
+        /// <summary>
+        /// Create a rectangle with the same center, but expanded by <paramref name="v"/> at all sides.
+        /// </summary>
+        /// <param name="v">Amount to inflate the rectangle at the four sides.</param>
+        /// <remarks>A negative value can be passed. This create a shrinked rectangle.</remarks>
+        public Rectangle Inflate(int v)
+        {
+            return Inflate(v, v);
+        }
+
+        /// <summary>
+        /// Create a rectangle with the same center, but expanded by <paramref name="h"/> at the horizontal sides
+        /// and by <paramref name="v"/> at the vertical sides.
+        /// </summary>
+        /// <param name="h">Amount to inflate the rectangle at the left and right sides.</param>
+        /// <param name="v">Amount to inflate the rectangle at the top and bottom sides.</param>
+        /// <remarks>A negative value can be passed. This create a shrinked rectangle.</remarks>
+#if NETSTANDARD2_0
+        [Pure]
+#endif
+        public Rectangle Inflate(int h, int v)
+        {
+            var halfH = h / 2;
+            var halfV = v / 2;
+            return new Rectangle(X - halfH, Y - halfV, Width + h, Height + v);
+        }
+
+        /// <summary>
+        /// Create a rectangle.
+        /// </summary>
+        /// <param name="tl">Top left of the rectangle.</param>
+        /// <param name="br">Bottom right of the rectangle.</param>
+        public static Rectangle FromExtremes(Point2 tl, Point2 br)
+        {
+            return new Rectangle(tl, br - tl);
+        }
+
+        /// <summary>
+        /// Create a rectangle.
+        /// </summary>
+        /// <param name="center">Center of the rectangle.</param>
+        /// <param name="halfExtents">Half of the size of the rectangle.</param>
+        public static Rectangle FromHalfExtents(Point2 center, Point2 halfExtents)
+        {
+            return new Rectangle(center - halfExtents, halfExtents * 2);
+        }
+
+        public void Deconstruct(out int x, out int y, out int width, out int height)
+        {
+            x = X;
+            y = Y;
+            width = Width;
+            height = Height;
+        }
+
+        public void Deconstruct(out Point2 position, out Point2 size)
+        {
+            position = TopLeft;
+            size = Size;
         }
 
         public bool Equals(Rectangle other)

@@ -2,18 +2,39 @@
 
 namespace OpenWheels.Rendering
 {
+    /// <summary>
+    /// Value type representing an ABGR color with 1 byte per channel (values in [0-255]).
+    /// </summary>
     [StructLayout(LayoutKind.Explicit)]
     public struct Color
     {
+        /// <summary>
+        /// Red channel value of the color.
+        /// </summary>
         [FieldOffset(3)]
         public readonly byte R;
+
+        /// <summary>
+        /// Green channel value of the color.
+        /// </summary>
         [FieldOffset(2)]
         public readonly byte G;
+
+        /// <summary>
+        /// Blue channel value of the color.
+        /// </summary>
         [FieldOffset(1)]
         public readonly byte B;
+
+        /// <summary>
+        /// Alpha channel value of the color.
+        /// </summary>
         [FieldOffset(0)]
         public readonly byte A;
         
+        /// <summary>
+        /// Value of the 4 channels packed together. Values are ordered ABGR with A as the most significant byte.
+        /// </summary>
         [FieldOffset(0)]
         public readonly uint Packed;
 
@@ -52,7 +73,7 @@ namespace OpenWheels.Rendering
         }
 
         /// <summary>
-        /// Create a new color with the given packed values.
+        /// Create a new color with the given packed value.
         /// The packed value is ordered ABGR with A at the most significant byte.
         /// </summary>
         /// <param name="packed">The packed value of this color.</param>

@@ -1,23 +1,10 @@
-﻿using System.Numerics;
+﻿using System.IO;
+using System.Numerics;
 
 namespace OpenWheels.Rendering
 {
     public interface IRenderer
     {
-        /// <summary>
-        /// Get a unique identifier for a named texture.
-        /// </summary>
-        /// <param name="name">The name of the texture.</param>
-        /// <returns>The texture identifier.</returns>
-        int GetTexture(string name);
-
-        /// <summary>
-        /// Get a unique identifier for a named font.
-        /// </summary>
-        /// <param name="name">The name of the font.</param>
-        /// <returns>The font identifier.</returns>
-        int GetFont(string name);
-
         /// <summary>
         /// Get the size of a texture.
         /// </summary>
@@ -36,7 +23,7 @@ namespace OpenWheels.Rendering
         /// <summary>
         /// Get the current viewport of the renderer.
         /// </summary>
-        /// <returns>The bounds of the viewport.</returns>
+        /// <returns>Bounds of the viewport.</returns>
         Rectangle GetViewport();
 
         /// <summary>
@@ -60,10 +47,8 @@ namespace OpenWheels.Rendering
     /// </summary>
     public sealed class NullRenderer : IRenderer
     {
-        public int GetTexture(string name) => -1;
-        public int GetFont(string name) => -1;
-        public Vector2 GetTextSize(string text, int font) => Vector2.Zero;
         public Point2 GetTextureSize(int texture) => Point2.Zero;
+        public Vector2 GetTextSize(string text, int font) => Vector2.Zero;
         public Rectangle GetViewport() => Rectangle.Empty;
         public void BeginRender() { }
         public void DrawBatch(GraphicsState state, Vertex[] vertexBuffer, int[] indexBuffer, int startIndex, int indexCount, object batchUserData) { }
@@ -71,48 +56,63 @@ namespace OpenWheels.Rendering
     }
 
     /// <summary>
-    /// A renderer implementation that stores a set amount of batches and optionally prints out debugging information.
+    /// A renderer implementation that stores can write out method calls and
+    /// delegates calls to another renderer.
     /// </summary>
-    public sealed class DebugRenderer : IRenderer
+    public class TraceRenderer : IRenderer
     {
-        public int GetTexture(string name)
+        public IRenderer DelegateRenderer { get; set; }
+        public TextWriter Writer { get; set; }
+        public string Prefix { get; set; }
+
+        public TraceRenderer()
         {
-            throw new System.NotImplementedException();
+            DelegateRenderer = new NullRenderer();
         }
 
-        public int GetFont(string name)
+        private void Write(string message)
         {
-            throw new System.NotImplementedException();
+            if (Writer != null)
+            {
+                var pre = Prefix ?? string.Empty;
+                Writer.WriteLine(pre + message);
+            }
         }
 
         public Vector2 GetTextSize(string text, int font)
         {
-            throw new System.NotImplementedException();
+            Write($"GetTextSize(${text}, ${font})");
+            return DelegateRenderer.GetTextSize(text, font);
         }
 
         public Point2 GetTextureSize(int texture)
         {
-            throw new System.NotImplementedException();
+            Write($"GetTextureSize(${texture})");
+            return DelegateRenderer.GetTextureSize(texture);
         }
 
         public Rectangle GetViewport()
         {
-            throw new System.NotImplementedException();
+            Write("GetViewport()");
+            return DelegateRenderer.GetViewport();
         }
 
         public void BeginRender()
         {
-            throw new System.NotImplementedException();
+            Write("BeginRender()");
+            DelegateRenderer.BeginRender();
         }
 
         public void DrawBatch(GraphicsState state, Vertex[] vertexBuffer, int[] indexBuffer, int startIndex, int indexCount, object batchUserData)
         {
-            throw new System.NotImplementedException();
+            Write($"DrawBatch(${state}, ${vertexBuffer}, ${indexBuffer}, ${startIndex}, ${indexCount}, ${batchUserData})");
+            DelegateRenderer.DrawBatch(state, vertexBuffer, indexBuffer, startIndex, indexCount, batchUserData);
         }
 
         public void EndRender()
         {
-            throw new System.NotImplementedException();
+            Write("EndRender()");
+            DelegateRenderer.EndRender();
         }
     }
 }

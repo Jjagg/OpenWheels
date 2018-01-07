@@ -4,6 +4,6 @@
     {
         None,
         DepthRead,
-        Default
+        ReadWrite
     }
 }
