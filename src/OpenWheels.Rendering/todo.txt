@@ -1,4 +1,6 @@
 TODO
 
 - Support 9-slicing! https://docs.unity3d.com/Manual/9SliceSprites.html
+- Only 1 call to draw a batch (for remoting) or stateful w\ calls to set
+  vertex and index buffer
 

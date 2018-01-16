@@ -13,49 +13,49 @@ namespace OpenWheels
     [TypeConverter(typeof(Point2Converter))]
     [DataContract]
 #endif
-    public struct Point2
+    public struct Size
     {
         /// <summary>
-        /// The Point2 at (0, 0).
+        /// A Size of (0, 0).
         /// </summary>
-        public static readonly Point2 Zero = new Point2();
+        public static readonly Size Empty = new Size();
 
         /// <summary>
-        /// X value of the point.
+        /// Width of the size.
         /// </summary>
 #if NETSTANDARD2_0
         [DataMember]
 #endif
-        public readonly int X;
+        public readonly int Width;
 
         /// <summary>
-        /// Y value of the point.
+        /// Height of the size.
         /// </summary>
 #if NETSTANDARD2_0
         [DataMember]
 #endif
-        public readonly int Y;
+        public readonly int Height;
 
         /// <summary>
-        /// Create a <see cref="Point2"/> with the given X and Y values.
+        /// Create a <see cref="Size"/> with the given Width and Height.
         /// </summary>
-        /// <param name="x">X value.</param>
-        /// <param name="y">Y value.</param>
-        public Point2(int x, int y)
+        /// <param name="width">Width value.</param>
+        /// <param name="height">Height value.</param>
+        public Size(int width, int height)
         {
-            X = x;
-            Y = y;
+            Width = width;
+            Height = height;
         }
 
         /// <summary>
-        /// Component-wise add two points.
+        /// Component-wise add two sizes.
         /// </summary>
-        /// <param name="p1">First point.</param>
-        /// <param name="p2">Second point.</param>
-        /// <returns><code>new Point2(p1.X + p2.X, p1.Y + p2.Y)</code></returns>
-        public static Point2 operator +(Point2 p1, Point2 p2)
+        /// <param name="p1">First size.</param>
+        /// <param name="p2">Second size.</param>
+        /// <returns><code>new Size(p1.Width + p2.Width, p1.Height + p2.Height)</code></returns>
+        public static Size operator +(Size p1, Size p2)
         {
-            return new Point2(p1.X + p2.X, p1.Y + p2.Y);
+            return new Size(p1.Width + p2.Width, p1.Height + p2.Height);
         }
 
         /// <summary>
@@ -63,10 +63,10 @@ namespace OpenWheels
         /// </summary>
         /// <param name="p1">Point to subtract from.</param>
         /// <param name="p2">Point to subtract.</param>
-        /// <returns><code>new Point2(p1.X - p2.X, p1.Y - p2.Y)</code></returns>
-        public static Point2 operator -(Point2 p1, Point2 p2)
+        /// <returns><code>new Size(p1.Width - p2.Width, p1.Height - p2.Height)</code></returns>
+        public static Size operator -(Size p1, Size p2)
         {
-            return new Point2(p1.X - p2.X, p1.Y - p2.Y);
+            return new Size(p1.Width - p2.Width, p1.Height - p2.Height);
         }
 
         /// <summary>
@@ -74,10 +74,10 @@ namespace OpenWheels
         /// </summary>
         /// <param name="s">Factor to scale by.</param>
         /// <param name="p">Point to scale.</param>
-        /// <returns><code>new Point2(s * p.X, s * p.Y)</code></returns>
-        public static Point2 operator *(int s, Point2 p)
+        /// <returns><code>new Size(s * p.Width, s * p.Height)</code></returns>
+        public static Size operator *(int s, Size p)
         {
-            return new Point2(s * p.X, s * p.Y);
+            return new Size(s * p.Width, s * p.Height);
         }
 
         /// <summary>
@@ -85,84 +85,84 @@ namespace OpenWheels
         /// </summary>
         /// <param name="p">Point to scale.</param>
         /// <param name="s">Factor to scale by.</param>
-        /// <returns><code>new Point2(s * p.X, s * p.Y)</code></returns>
-        public static Point2 operator *(Point2 p,int s)
+        /// <returns><code>new Size(s * p.Width, s * p.Height)</code></returns>
+        public static Size operator *(Size p,int s)
         {
-            return new Point2(s * p.X, s * p.Y);
+            return new Size(s * p.Width, s * p.Height);
         }
 
         public void Deconstruct(out int x, out int y)
         {
-            x = X;
-            y = Y;
+            x = Width;
+            y = Height;
         }
 
 #if NETSTANDARD2_0
-        public static implicit operator Point2((int x, int y) t)
+        public static implicit operator Size((int x, int y) t)
         {
-            return new Point2(t.x, t.y);
+            return new Size(t.x, t.y);
         }
 #endif
 
         /// <summary>
         /// Copy this point, but replace the x value.
         /// </summary>
-        /// <param name="x">X value for the new point.</param>
+        /// <param name="x">Width value for the new point.</param>
 #if NETSTANDARD2_0
         [Pure]
 #endif
-        public Point2 WithX(int x)
+        public Size WithWidth(int x)
         {
-            return new Point2(x, Y);
+            return new Size(x, Height);
         }
 
         /// <summary>
         /// Copy this point, but replace the y value.
         /// </summary>
-        /// <param name="y">Y value for the new point.</param>
+        /// <param name="y">Height value for the new point.</param>
 #if NETSTANDARD2_0
         [Pure]
 #endif
-        public Point2 WithY(int y)
+        public Size WithHeight(int y)
         {
-            return new Point2(X, y);
+            return new Size(Width, y);
         }
 
-        public bool Equals(Point2 other)
+        public bool Equals(Size other)
         {
-            return X.Equals(other.X) && Y.Equals(other.Y);
+            return Width.Equals(other.Width) && Height.Equals(other.Height);
         }
 
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             if (obj.GetType() != this.GetType()) return false;
-            return Equals((Point2) obj);
+            return Equals((Size) obj);
         }
 
         public override int GetHashCode()
         {
             unchecked
             {
-                var hashCode = X.GetHashCode();
-                hashCode = (hashCode * 397) ^ Y.GetHashCode();
+                var hashCode = Width.GetHashCode();
+                hashCode = (hashCode * 397) ^ Height.GetHashCode();
                 return hashCode;
             }
         }
 
-        public static bool operator ==(Point2 left, Point2 right)
+        public static bool operator ==(Size left, Size right)
         {
             return Equals(left, right);
         }
 
-        public static bool operator !=(Point2 left, Point2 right)
+        public static bool operator !=(Size left, Size right)
         {
             return !Equals(left, right);
         }
 
         public override string ToString()
         {
-            return $"{X:g5} {Y:g5}";
+            return $"{Width:g5} {Height:g5}";
         }
     }
 }

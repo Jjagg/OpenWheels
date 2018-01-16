@@ -1,10 +1,20 @@
 ﻿using System.Collections.Generic;
 
+#if NETSTANDARD2_0
+using System.Diagnostics.Contracts;
+using System.ComponentModel;
+using System.Runtime.Serialization;
+#endif
+
 namespace OpenWheels
 {
     /// <summary>
     /// Value type representing a rectangle with integer coordinates.
     /// </summary>
+#if NETSTANDARD2_0
+    [TypeConverter(typeof(RectangleConverter))]
+    [DataContract]
+#endif
     public struct Rectangle
     {
         /// <summary>
@@ -20,21 +30,33 @@ namespace OpenWheels
         /// <summary>
         /// X coordinate of the rectangle.
         /// </summary>
+#if NETSTANDARD2_0
+        [DataMember]
+#endif
         public readonly int X;
  
         /// <summary>
         /// Y coordinate of the rectangle.
         /// </summary>
+#if NETSTANDARD2_0
+        [DataMember]
+#endif
         public readonly int Y;
 
         /// <summary>
         /// Width of the rectangle.
         /// </summary>
+#if NETSTANDARD2_0
+        [DataMember]
+#endif
         public readonly int Width;
 
         /// <summary>
         /// Height of the rectangle.
         /// </summary>
+#if NETSTANDARD2_0
+        [DataMember]
+#endif
         public readonly int Height;
 
         /// <summary>

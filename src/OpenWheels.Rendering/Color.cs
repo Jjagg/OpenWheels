@@ -1,19 +1,11 @@
 ﻿using System.Runtime.InteropServices;
-#if NETSTANDARD2_0
-using System.ComponentModel;
-using System.Runtime.Serialization;
-#endif
 
-namespace OpenWheels
+namespace OpenWheels.Rendering
 {
     /// <summary>
     /// Value type representing an ABGR color with 1 byte per channel (values in [0-255]).
     /// </summary>
     [StructLayout(LayoutKind.Explicit)]
-#if NETSTANDARD2_0
-    [TypeConverter(typeof(ColorConverter))]
-    [DataContract]
-#endif
     public partial struct Color
     {
         /// <summary>
@@ -44,9 +36,6 @@ namespace OpenWheels
         /// Value of the 4 channels packed together. Values are ordered ABGR with A as the most significant byte.
         /// </summary>
         [FieldOffset(0)]
-#if NETSTANDARD2_0
-        [DataMember]
-#endif
         public readonly uint Packed;
 
         /// <summary>

@@ -1,11 +1,21 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
 
+#if NETSTANDARD2_0
+using System.Diagnostics.Contracts;
+using System.ComponentModel;
+using System.Runtime.Serialization;
+#endif
+
 namespace OpenWheels
 {
     /// <summary>
     /// Value type representing a rectangle with float coordinates.
     /// </summary>
+#if NETSTANDARD2_0
+    [TypeConverter(typeof(RectangleFConverter))]
+    [DataContract]
+#endif
     public struct RectangleF
     {
         /// <summary>
@@ -21,21 +31,33 @@ namespace OpenWheels
         /// <summary>
         /// X coordinate of the top left of the rectangle.
         /// </summary>
+#if NETSTANDARD2_0
+        [DataMember]
+#endif
         public readonly float X;
 
         /// <summary>
         /// Y coordinate of the top left of the rectangle.
         /// </summary>
+#if NETSTANDARD2_0
+        [DataMember]
+#endif
         public readonly float Y;
 
         /// <summary>
         /// Width of the rectangle.
         /// </summary>
+#if NETSTANDARD2_0
+        [DataMember]
+#endif
         public readonly float Width;
 
         /// <summary>
         /// Height of the rectangle.
         /// </summary>
+#if NETSTANDARD2_0
+        [DataMember]
+#endif
         public readonly float Height;
 
         /// <summary>
@@ -134,6 +156,9 @@ namespace OpenWheels
         /// </summary>
         /// <param name="v">Amount to inflate the rectangle at the four sides.</param>
         /// <remarks>A negative value can be passed. This create a shrinked rectangle.</remarks>
+#if NETSTANDARD2_0
+        [Pure]
+#endif
         public RectangleF Inflate(float v)
         {
             return Inflate(v, v);
@@ -145,6 +170,9 @@ namespace OpenWheels
         /// </summary>
         /// <param name="h">Amount to inflate the rectangle at the left and right sides.</param>
         /// <param name="v">Amount to inflate the rectangle at the top and bottom sides.</param>
+#if NETSTANDARD2_0
+        [Pure]
+#endif
         public RectangleF Inflate(float h, float v)
         {
             var halfH = h / 2;
@@ -170,6 +198,11 @@ namespace OpenWheels
         public static RectangleF FromHalfExtents(Vector2 center, Vector2 halfExtents)
         {
             return new RectangleF(center - halfExtents, halfExtents * 2);
+        }
+
+        public static implicit operator RectangleF(Rectangle rect)
+        {
+            return new RectangleF(rect.X, rect.Y, rect.Width, rect.Height);
         }
 
         public bool Equals(RectangleF other)

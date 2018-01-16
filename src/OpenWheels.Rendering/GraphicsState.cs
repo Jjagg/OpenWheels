@@ -1,4 +1,6 @@
-﻿namespace OpenWheels.Rendering
+﻿using SixLabors.Primitives;
+
+namespace OpenWheels.Rendering
 {
     public struct GraphicsState
     {
