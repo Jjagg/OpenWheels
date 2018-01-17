@@ -2,11 +2,11 @@
 {
     public enum SamplerState
     {
-        PointWrap,
-        PointClamp,
-        LinearWrap,
         LinearClamp,
+        LinearWrap,
+        PointClamp,
+        PointWrap,
+        AnisotropicClamp,
         AnisotropicWrap,
-        AnisotropicClamp
     }
 }

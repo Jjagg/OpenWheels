@@ -90,7 +90,8 @@ namespace OpenWheels.Rendering
         private RasterizerState _rasterizerState;
         private SamplerState _samplerState;
         private Rectangle _scissorRect;
-        private Matrix4x4 _transformMatrix = Matrix4x4.Identity;
+        private Matrix4x4 _transformMatrix;
+        private bool _useMatrix;
 
         /// <summary>
         /// Get or set the transformation matrix to apply to vertex positions.
@@ -98,7 +99,11 @@ namespace OpenWheels.Rendering
         public Matrix4x4 TransformMatrix
         {
             get => _transformMatrix;
-            set => _transformMatrix = value;
+            set
+            {
+                _transformMatrix = value;
+                _useMatrix = _transformMatrix != Matrix4x4.Identity;
+            }
         }
 
         /// <summary>
@@ -225,6 +230,8 @@ namespace OpenWheels.Rendering
 
             _batches = new List<BatchInfo>();
             _lastGraphicsState = GraphicsState.Default;
+
+            TransformMatrix = Matrix4x4.Identity;
         }
 
         #region Set Texture and Matrix
@@ -752,6 +759,8 @@ namespace OpenWheels.Rendering
         {
             // remap uv from unit rectangle to the uv rectangle of our sprite
             var actualUv = MathHelper.LinearMap(uv, new RectangleF(0, 0, 1, 1), _spriteUv);
+            if (_useMatrix)
+                p = Vector2.Transform(p, TransformMatrix);
             var v3 = new Vector3(p.X, p.Y, 0);
             return new Vertex(v3, actualUv, c);
         }

@@ -11,25 +11,25 @@ namespace OpenWheels.Rendering
         /// <summary>
         /// Red channel value of the color.
         /// </summary>
-        [FieldOffset(3)]
+        [FieldOffset(0)]
         public readonly byte R;
 
         /// <summary>
         /// Green channel value of the color.
         /// </summary>
-        [FieldOffset(2)]
+        [FieldOffset(1)]
         public readonly byte G;
 
         /// <summary>
         /// Blue channel value of the color.
         /// </summary>
-        [FieldOffset(1)]
+        [FieldOffset(2)]
         public readonly byte B;
 
         /// <summary>
         /// Alpha channel value of the color.
         /// </summary>
-        [FieldOffset(0)]
+        [FieldOffset(3)]
         public readonly byte A;
         
         /// <summary>
