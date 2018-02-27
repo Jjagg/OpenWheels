@@ -18,16 +18,6 @@ namespace OpenWheels.Rendering
         public readonly BlendState BlendState;
 
         /// <summary>
-        /// Depth and stencil state to apply.
-        /// </summary>
-        public readonly DepthStencilState DepthStencilState;
-
-        /// <summary>
-        /// Rasterizer state to apply.
-        /// </summary>
-        public readonly RasterizerState RasterizerState;
-
-        /// <summary>
         /// Sampler state to apply.
         /// </summary>
         public readonly SamplerState SamplerState;
@@ -48,17 +38,13 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="texture">Id of the texture to render.</param>
         /// <param name="blendState">Blend state.</param>
-        /// <param name="depthStencilState">Depth/stencil state.</param>
-        /// <param name="rasterizerState">Rasterizer state.</param>
         /// <param name="samplerState">Sampler state.</param>
         /// <param name="scissorRect">Scissor rectangle. <see cref="Rectangle.Empty"/> means no scissor rectangle is set.</param>
-        public GraphicsState(int texture, BlendState blendState, DepthStencilState depthStencilState,
-            RasterizerState rasterizerState, SamplerState samplerState, Rectangle scissorRect)
+        public GraphicsState(int texture, BlendState blendState,
+            SamplerState samplerState, Rectangle scissorRect)
         {
             Texture = texture;
             BlendState = blendState;
-            DepthStencilState = depthStencilState;
-            RasterizerState = rasterizerState;
             SamplerState = samplerState;
             ScissorRect = scissorRect;
         }
@@ -66,6 +52,6 @@ namespace OpenWheels.Rendering
         /// <summary>
         /// Get the default <see cref="GraphicsState"/>.
         /// </summary>
-        public static GraphicsState Default => new GraphicsState(-1, 0, 0, 0, 0, Rectangle.Empty);
+        public static GraphicsState Default => new GraphicsState(-1, 0, 0, Rectangle.Empty);
     }
 }

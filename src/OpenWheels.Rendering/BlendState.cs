@@ -12,7 +12,8 @@
         AlphaBlend,
         /// <summary>
         /// Render the source color without blending.
+        /// I.e. blend = src.rgb
         /// </summary>
-        Opaque,
+        Opaque
     }
 }

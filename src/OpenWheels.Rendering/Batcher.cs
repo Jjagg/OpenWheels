@@ -16,9 +16,8 @@ namespace OpenWheels.Rendering
     ///   <see cref="Batcher"/>, like the name implies, attempts to batch as many sequential drawing operations
     ///   as possible. Operations can be batched as long as you do not change the graphics state, the texture
     ///   or the scissor rectangle. The Batcher API is stateful. All graphics state is set in between draw calls.
-    ///   You can change the graphics state by setting the properties 
-    ///   <see cref="BlendState"/>, <see cref="DepthState"/>, <see cref="RasterizerState"/> and 
-    ///   <see cref="SamplerState"/>. You can set the texture by calling <see cref="SetTexture(int)"/> or 
+    ///   You can change the graphics state by setting the properties <see cref="BlendState"/> and
+    ///   <see cref="SamplerState"/>. You can set the texture by calling <see cref="SetTexture(int)"/> or
     ///   <see cref="SetSprite(int,Rectangle)"/>. <seealso cref="Sprite"/>
     ///   Note that setting a sprite from the same texture will not finish a batch, since this just requires
     ///   to compute UV coordinates differently.
@@ -86,8 +85,6 @@ namespace OpenWheels.Rendering
         private RectangleF _spriteUv;
         private IRenderer _renderer;
         private BlendState _blendState;
-        private DepthStencilState _depthState;
-        private RasterizerState _rasterizerState;
         private SamplerState _samplerState;
         private Rectangle _scissorRect;
         private Matrix4x4 _transformMatrix;
@@ -137,34 +134,6 @@ namespace OpenWheels.Rendering
                 if (_blendState != value)
                     Flush();
                 _blendState = value;
-            }
-        }
-
-        /// <summary>
-        /// Get or set the depth/stencil state.
-        /// </summary>
-        public DepthStencilState DepthState
-        {
-            get { return _depthState; }
-            set
-            {
-                if (_depthState != value)
-                    Flush();
-                _depthState = value;
-            }
-        }
-
-        /// <summary>
-        /// Get or set the rasterizer state.
-        /// </summary>
-        public RasterizerState RasterizerState
-        {
-            get => _rasterizerState;
-            set
-            {
-                if (_rasterizerState != value)
-                    Flush();
-                _rasterizerState = value;
             }
         }
 
@@ -799,7 +768,7 @@ namespace OpenWheels.Rendering
 
         private GraphicsState CreateCurrentGraphicsState()
         {
-            return new GraphicsState(Sprite.Texture, BlendState, DepthState, RasterizerState, SamplerState, ScissorRect);
+            return new GraphicsState(Sprite.Texture, BlendState, SamplerState, ScissorRect);
         }
     }
 }
