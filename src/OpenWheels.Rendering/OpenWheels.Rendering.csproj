@@ -4,13 +4,10 @@
     <LangVersion>7.1</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="SixLabors.Core" Version="1.0.0-beta0004" />
     <PackageReference Include="System.Numerics.Vectors" Version="4.4.0" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="SixLabors.Core, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\..\..\..\.nuget\packages\sixlabors.core\1.0.0-beta0004\lib\netcoreapp2.0\SixLabors.Core.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\OpenWheels\OpenWheels.csproj" />
   </ItemGroup>
   <PropertyGroup>
     <Description>Backend-agnostic 2D geometry batcher for GPU rendering.</Description>
