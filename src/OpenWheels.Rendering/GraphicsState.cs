@@ -1,6 +1,4 @@
-﻿using SixLabors.Primitives;
-
-namespace OpenWheels.Rendering
+﻿namespace OpenWheels.Rendering
 {
     /// <summary>
     /// Holds graphics state for rendering.

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using SixLabors.Primitives;
 
 namespace OpenWheels.Rendering
 {
@@ -251,12 +250,12 @@ namespace OpenWheels.Rendering
             var d = Vector2.Normalize(p2 - p1);
             var dt = new Vector2(-d.Y, d.X) * (lineWidth / 2f);
 
-            var ur = uvRect ?? new RectangleF(0, 0, 1, 1);
+            var ur = uvRect ?? RectangleF.Unit;
 
-            var v1 = CreateVertex(p1 - dt, ur.TopLeft(), color);
-            var v2 = CreateVertex(p1 + dt, ur.TopRight(), color);
-            var v3 = CreateVertex(p2 + dt, ur.BottomRight(), color);
-            var v4 = CreateVertex(p2 - dt, ur.BottomLeft(), color);
+            var v1 = CreateVertex(p1 - dt, ur.TopLeft, color);
+            var v2 = CreateVertex(p1 + dt, ur.TopRight, color);
+            var v3 = CreateVertex(p2 + dt, ur.BottomRight, color);
+            var v4 = CreateVertex(p2 - dt, ur.BottomLeft, color);
             FillQuad(v1, v2, v3, v4);
         }
 
@@ -432,11 +431,11 @@ namespace OpenWheels.Rendering
         /// <param name="uvRect">Uv rectangle inside the sprite to source. Probably not very useful for user code.</param>
         public void FillRect(RectangleF rect, Color c1, Color c2, Color c3, Color c4, RectangleF? uvRect = null)
         {
-            var r = uvRect ?? new RectangleF(0, 0, 1, 1);
-            var v1 = CreateVertex(rect.TopLeft(),     r.TopLeft(),     c1);
-            var v2 = CreateVertex(rect.TopRight(),    r.TopRight(),    c2);
-            var v3 = CreateVertex(rect.BottomRight(), r.BottomRight(), c3);
-            var v4 = CreateVertex(rect.BottomLeft(),  r.BottomLeft(),  c4);
+            var r = uvRect ?? RectangleF.Unit;
+            var v1 = CreateVertex(rect.TopLeft,     r.TopLeft,     c1);
+            var v2 = CreateVertex(rect.TopRight,    r.TopRight,    c2);
+            var v3 = CreateVertex(rect.BottomRight, r.BottomRight, c3);
+            var v4 = CreateVertex(rect.BottomLeft,  r.BottomLeft,  c4);
             
             FillQuad(v1, v2, v3, v4);
         }
@@ -461,10 +460,10 @@ namespace OpenWheels.Rendering
                 return;
             }
 
-            var ur = uvRect ?? new RectangleF(0, 0, 1, 1);
+            var ur = uvRect ?? RectangleF.Unit;
             var outerRect = rectangle;
             var innerRect = rectangle;
-            innerRect.Inflate(-2 * radius, -2 * radius);
+            innerRect = innerRect.Inflate(-2 * radius, -2 * radius);
 
             FillRect(innerRect, color, MathHelper.LinearMap(innerRect, outerRect, ur));
 
@@ -478,16 +477,15 @@ namespace OpenWheels.Rendering
             FillRect(topRect,    color, MathHelper.LinearMap(topRect, outerRect, ur)); // top
             FillRect(bottomRect, color, MathHelper.LinearMap(bottomRect, outerRect, ur)); // top
 
-            var tl = innerRect.TopLeft();
-            var tr = innerRect.TopRight();
-            var br = innerRect.BottomRight();
-            var bl = innerRect.BottomLeft();
-            var radius2 = 2 * radius;
+            var tl = innerRect.TopLeft;
+            var tr = innerRect.TopRight;
+            var br = innerRect.BottomRight;
+            var bl = innerRect.BottomLeft;
             var radiusVec = new Vector2(radius);
-            var tlRect = new RectangleF(tl - radiusVec, new SizeF(radius2, radius2));
-            var trRect = new RectangleF(tr - radiusVec, new SizeF(radius2, radius2));
-            var brRect = new RectangleF(br - radiusVec, new SizeF(radius2, radius2));
-            var blRect = new RectangleF(bl - radiusVec, new SizeF(radius2, radius2));
+            var tlRect = RectangleF.FromHalfExtents(tl, radiusVec);
+            var trRect = RectangleF.FromHalfExtents(tr, radiusVec);
+            var brRect = RectangleF.FromHalfExtents(br, radiusVec);
+            var blRect = RectangleF.FromHalfExtents(bl, radiusVec);
             FillCircleSegment(tl, radius, LeftAngle,       TopAngle,      color, segments, MathHelper.LinearMap(tlRect, outerRect, ur));
             FillCircleSegment(tr, radius, TopAngle,        RightEndAngle, color, segments, MathHelper.LinearMap(trRect, outerRect, ur));
             FillCircleSegment(br, radius, RightStartAngle, BotAngle,      color, segments, MathHelper.LinearMap(brRect, outerRect, ur));
@@ -565,8 +563,8 @@ namespace OpenWheels.Rendering
         public void FillCircleSegment(Vector2 center, float radius, float start, float end, Color color, int sides, RectangleF? uvRect = null)
         {
             var ps = CreateCircleSegment(center, radius, sides, start, end);
-            var fromRect = new RectangleF(center - new Vector2(radius), 2 * new SizeF(radius, radius));
-            var toRect = uvRect ?? new RectangleF(0, 0, 1, 1);
+            var fromRect = RectangleF.FromHalfExtents(center, new Vector2(radius));
+            var toRect = uvRect ?? RectangleF.Unit;
             var vs = ps.Select(p => CreateVertex(p, MathHelper.LinearMap(p, fromRect, toRect), color));
             var vCenter = CreateVertex(center, MathHelper.LinearMap(center, fromRect, toRect), color);
             FillTriangleFan(vCenter, vs);
@@ -727,7 +725,7 @@ namespace OpenWheels.Rendering
         private Vertex CreateVertex(Vector2 p, Vector2 uv, Color c)
         {
             // remap uv from unit rectangle to the uv rectangle of our sprite
-            var actualUv = MathHelper.LinearMap(uv, new RectangleF(0, 0, 1, 1), _spriteUv);
+            var actualUv = MathHelper.LinearMap(uv, RectangleF.Unit, _spriteUv);
             if (_useMatrix)
                 p = Vector2.Transform(p, TransformMatrix);
             var v3 = new Vector3(p.X, p.Y, 0);

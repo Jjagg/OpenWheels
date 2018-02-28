@@ -1,6 +1,5 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
-using SixLabors.Primitives;
 
 namespace OpenWheels.Rendering
 {
@@ -135,7 +134,7 @@ namespace OpenWheels.Rendering
         {
             var tl = LinearMap(value.TopLeft(), from, to);
             var br = LinearMap(value.BottomRight(), from, to);
-            return RectangleF.FromLTRB(tl.X, tl.Y, br.X, br.Y);
+            return RectangleF.FromExtremes(tl.X, tl.Y, br.X, br.Y);
         }
         
         #endregion

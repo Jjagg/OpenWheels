@@ -1,6 +1,5 @@
 ﻿using System.IO;
 using System.Numerics;
-using SixLabors.Primitives;
 
 namespace OpenWheels.Rendering
 {
@@ -11,7 +10,7 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="texture">The identifier of the texture.</param>
         /// <returns>The size of the texture in pixels.</returns>
-        Point GetTextureSize(int texture);
+        Point2 GetTextureSize(int texture);
 
         /// <summary>
         /// Get the size of some text.
@@ -48,7 +47,7 @@ namespace OpenWheels.Rendering
     /// </summary>
     public sealed class NullRenderer : IRenderer
     {
-        public Point GetTextureSize(int texture) => Point.Empty;
+        public Point2 GetTextureSize(int texture) => Point2.Zero;
         public Vector2 GetTextSize(string text, int font) => Vector2.Zero;
         public Rectangle GetViewport() => Rectangle.Empty;
         public void BeginRender() { }
@@ -86,7 +85,7 @@ namespace OpenWheels.Rendering
             return DelegateRenderer.GetTextSize(text, font);
         }
 
-        public Point GetTextureSize(int texture)
+        public Point2 GetTextureSize(int texture)
         {
             Write($"GetTextureSize(${texture})");
             return DelegateRenderer.GetTextureSize(texture);

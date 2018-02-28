@@ -180,6 +180,18 @@ namespace OpenWheels
         /// <summary>
         /// Create a rectangle.
         /// </summary>
+        /// <param name="left">Left of the rectangle.</param>
+        /// <param name="top">Top of the rectangle.</param>
+        /// <param name="bottom">Bottom of the rectangle.</param>
+        /// <param name="right">Right of the rectangle.</param>
+        public static Rectangle FromExtremes(int left, int top, int bottom, int right)
+        {
+            return FromExtremes(new Point2(left, top), new Point2(bottom, right));
+        }
+
+        /// <summary>
+        /// Create a rectangle.
+        /// </summary>
         /// <param name="tl">Top left of the rectangle.</param>
         /// <param name="br">Bottom right of the rectangle.</param>
         public static Rectangle FromExtremes(Point2 tl, Point2 br)

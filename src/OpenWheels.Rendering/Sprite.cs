@@ -1,6 +1,4 @@
-﻿using SixLabors.Primitives;
-
-namespace OpenWheels.Rendering
+﻿namespace OpenWheels.Rendering
 {
     /// <summary>
     /// A sprite value type, represented with a texture identifier and a source rectangle (in pixels) into the texture.
@@ -31,7 +29,7 @@ namespace OpenWheels.Rendering
         public override string ToString()
         {
             var t = $"{nameof(Texture)}: {Texture}";
-            if (SrcRect != new Rectangle(0, 0, 1, 1))
+            if (SrcRect != Rectangle.Unit)
                 t = t + $", {nameof(SrcRect)}: {SrcRect}";
             return t;
         }

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
-using SixLabors.Primitives;
 
 namespace OpenWheels.Rendering
 {
