@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 #if NETSTANDARD2_0
 using System.ComponentModel;
 using System.Runtime.Serialization;
@@ -105,6 +106,39 @@ namespace OpenWheels
         {
             R = G = B = A = 0;
             Packed = packed;
+        }
+
+        /// <summary>
+        /// Parse a <see cref="Color"/> from a <see cref="string"/>.
+        /// Expected format is 3 or 4 byte values separated by any number of ',' or ' '.
+        /// Values are parsed as R, G, B, A in that order. Alpha is optional.
+        /// All of the following are valid:
+        /// - "212, 120, 27"
+        /// - "100, 232, 242, 250"
+        /// - "0 255 255 255"
+        /// - "   0, , ,, 8, ,  , 210,    255"
+        /// </summary>
+        /// <param name="str">String to parse.</param>
+        /// <returns>The parsed color.</returns>
+        /// <exception cref="FormatException">If the given string does not match the expected format.</exception>
+        public static Color Parse(string str)
+        {
+            var s = str.Split(new[] {',', ' '}, StringSplitOptions.RemoveEmptyEntries);
+            if (s.Length < 3)
+                throw new FormatException("Expected at least 3 parts separated by either ',' or ' ' (or both).");
+            if (s.Length > 4)
+                throw new FormatException("Expected at most 4 parts separated by either ',' or ' ' (or both).");
+            var r = byte.Parse(s[0]);
+            var g = byte.Parse(s[1]);
+            var b = byte.Parse(s[2]);
+            var a = s.Length == 3 ? (byte) 255 : byte.Parse(s[3]);
+            return new Color(r, g, b, a);
+        }
+
+        public override string ToString()
+        {
+            var aStr = A == 255 ? string.Empty : ", " + A;
+            return $"{R}, {G}, {B}{aStr}";
         }
     }
 }

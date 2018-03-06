@@ -1,4 +1,4 @@
-﻿namespace OpenWheels.Plotting
+﻿namespace OpenWheels
 {
     public struct ColorPoint
     {

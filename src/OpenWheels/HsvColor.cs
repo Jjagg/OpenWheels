@@ -1,13 +1,31 @@
 ﻿using System;
 
-namespace OpenWheels.Plotting
+namespace OpenWheels
 {
+    /// <summary>
+    /// Hue, Saturation, Value color.
+    /// </summary>
     public struct HsvColor
     {
+        /// <summary>
+        /// Hue of the color in the range [0 360[.
+        /// </summary>
         public readonly float H;
+        /// <summary>
+        /// Saturation of the color in the range [0 1].
+        /// </summary>
         public readonly float S;
+        /// <summary>
+        /// Value of the color in the range [0 1].
+        /// </summary>
         public readonly float V;
 
+        /// <summary>
+        /// Create a new HSV color.
+        /// </summary>
+        /// <param name="h">Hue of the color. Normalized to [0 360[.</param>
+        /// <param name="s">Saturation of the color. Clamped to [0 1].</param>
+        /// <param name="v">Value of the color. Clamped to [0 1].</param>
         public HsvColor(float h, float s, float v)
         {
             H = NormalizeHue(h);
@@ -15,16 +33,24 @@ namespace OpenWheels.Plotting
             V = v < 0 ? 0 : (v > 1 ? 1 : v);
         }
 
-        public override string ToString()
-        {
-            return $"H: {H}°; S: {(int) (S * 100)}%, V: {(int) (V * 100)}%";
-        }
-
         private static float NormalizeHue(float h)
         {
             return (h % 360 + 360) % 360;
         }
 
+        public override string ToString()
+        {
+            return $"H: {H}°; S: {(int) (S * 100)}%, V: {(int) (V * 100)}%";
+        }
+
+        /// <summary>
+        /// Linearly interpolate between two colors.
+        /// Takes the closest path from one hue to the other.
+        /// </summary>
+        /// <param name="c1">First color.</param>
+        /// <param name="c2">Second color.</param>
+        /// <param name="t">Interpolation factor in the range [0, 1].</param>
+        /// <returns>Interpolated color.</returns>
         public static HsvColor Lerp(HsvColor c1, HsvColor c2, float t)
         {
             var d = c2.H - c1.H;
@@ -36,16 +62,25 @@ namespace OpenWheels.Plotting
                 c1.V + t * (c2.V - c1.V));
         }
 
+        /// <summary>
+        /// Convert an HSV color to an RGB color.
+        /// </summary>
+        /// <param name="hsv">HSV color to convert.</param>
+        /// <returns>Corresponding color in RGB color space.</returns>
         public static implicit operator Color(HsvColor hsv)
         {
             return HsvToRgb(hsv);
         }
 
+        /// <summary>
+        /// Convert an RGB color to an HSV color.
+        /// </summary>
+        /// <param name="rgb">RGB color to convert.</param>
+        /// <returns>Corresponding color in HSV color space.</returns>
         public static implicit operator HsvColor(Color rgb)
         {
             return RgbToHsv(rgb);
         }
-
 
         private static HsvColor RgbToHsv(Color color)
         {
