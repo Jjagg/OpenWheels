@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27004.2008
@@ -6,6 +6,8 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenWheels.Rendering", "OpenWheels.Rendering\OpenWheels.Rendering.csproj", "{1CFA6E55-9B24-489B-B288-A92E4B6997F5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenWheels", "OpenWheels\OpenWheels.csproj", "{DDE33653-73F3-46FC-A07B-AC08CF26A1BF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenWheels.Plotting", "OpenWheels.Plotting\OpenWheels.Plotting.csproj", "{196FE6A0-CD2C-4444-BF64-1223D35FE997}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,6 +43,18 @@ Global
 		{DDE33653-73F3-46FC-A07B-AC08CF26A1BF}.Release|x64.Build.0 = Release|Any CPU
 		{DDE33653-73F3-46FC-A07B-AC08CF26A1BF}.Release|x86.ActiveCfg = Release|Any CPU
 		{DDE33653-73F3-46FC-A07B-AC08CF26A1BF}.Release|x86.Build.0 = Release|Any CPU
+		{196FE6A0-CD2C-4444-BF64-1223D35FE997}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{196FE6A0-CD2C-4444-BF64-1223D35FE997}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{196FE6A0-CD2C-4444-BF64-1223D35FE997}.Debug|x64.ActiveCfg = Debug|x64
+		{196FE6A0-CD2C-4444-BF64-1223D35FE997}.Debug|x64.Build.0 = Debug|x64
+		{196FE6A0-CD2C-4444-BF64-1223D35FE997}.Debug|x86.ActiveCfg = Debug|x86
+		{196FE6A0-CD2C-4444-BF64-1223D35FE997}.Debug|x86.Build.0 = Debug|x86
+		{196FE6A0-CD2C-4444-BF64-1223D35FE997}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{196FE6A0-CD2C-4444-BF64-1223D35FE997}.Release|Any CPU.Build.0 = Release|Any CPU
+		{196FE6A0-CD2C-4444-BF64-1223D35FE997}.Release|x64.ActiveCfg = Release|x64
+		{196FE6A0-CD2C-4444-BF64-1223D35FE997}.Release|x64.Build.0 = Release|x64
+		{196FE6A0-CD2C-4444-BF64-1223D35FE997}.Release|x86.ActiveCfg = Release|x86
+		{196FE6A0-CD2C-4444-BF64-1223D35FE997}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

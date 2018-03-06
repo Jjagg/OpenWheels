@@ -105,7 +105,7 @@ namespace OpenWheels.Rendering
 
         public void DrawBatch(GraphicsState state, Vertex[] vertexBuffer, int[] indexBuffer, int startIndex, int indexCount, object batchUserData)
         {
-            Write($"DrawBatch(${state}, ${vertexBuffer}, ${indexBuffer}, ${startIndex}, ${indexCount}, ${batchUserData})");
+            Write($"DrawBatch({state}, {vertexBuffer}, {indexBuffer}, {startIndex}, {indexCount}, {batchUserData})");
             DelegateRenderer.DrawBatch(state, vertexBuffer, indexBuffer, startIndex, indexCount, batchUserData);
         }
 

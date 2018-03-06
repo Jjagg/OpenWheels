@@ -84,6 +84,19 @@ namespace OpenWheels
         }
 
         /// <summary>
+        /// Create a new color with the given r, g, b and a values.
+        /// Values should be in the range [0, 1].
+        /// </summary>
+        /// <param name="r">Red channel value.</param>
+        /// <param name="g">Green channel value.</param>
+        /// <param name="b">Blue channel value.</param>
+        /// <param name="a">Alpha channel value. Defaults to opaque (1f).</param>
+        public Color(float r, float g, float b, float a = 1f)
+            : this((int) (r * 255), (int) (g * 255), (int) (b * 255), (int) (a * 255))
+        {
+        }
+
+        /// <summary>
         /// Create a new color with the given packed value.
         /// The packed value is ordered ABGR with A at the most significant byte.
         /// </summary>
