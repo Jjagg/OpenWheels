@@ -38,10 +38,11 @@ namespace OpenWheels
                     return;
                 }
             }
+
             _colorPoints.Add(cp);
         }
 
-        public Color Map(float value)
+        public HsvColor MapHsv(float value)
         {
             if (_colorPoints.Count == 0)
                 return ZeroColor;
@@ -66,6 +67,11 @@ namespace OpenWheels
             var dc = c2.Position - c1.Position;
             var t = (value - c1.Position) / dc;
             return HsvColor.Lerp(c1.Color, c2.Color, t);
+        }
+
+        public Color Map(float value)
+        {
+            return (Color) MapHsv(value);
         }
 
         public IEnumerator<ColorPoint> GetEnumerator()
