@@ -94,13 +94,14 @@ namespace OpenWheels
             if (d == 0)
                 h = 0;
             else if (max == r)
-                h = ((g - b / d) + 6) % 6;
+                h = ((g - b) / d + 6) % 6;
             else if (max == g)
                 h = (b - r) / d + 2;
             else
                 h = (r - g) / d + 4;
             var s = max == 0 ? 0 : d / max;
-            return new HsvColor(h, s, max);
+            
+            return new HsvColor(60 * h, s, max);
        }
 
         private static Color HsvToRgb(HsvColor hsv)
