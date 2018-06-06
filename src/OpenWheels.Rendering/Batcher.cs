@@ -770,6 +770,12 @@ namespace OpenWheels.Rendering
 
         #endregion
 
+        /// <summary>
+        /// Ensure that the vertex and index buffers have at least the specified amount of free spots.
+        /// Grows the vertex and index buffer if necessary.
+        /// </summary>
+        /// <param name="vertexCount">Number of free vertex elements to ensure.</param>
+        /// <param name="indexCount">Number of free index elements to ensure.</param>
         public void EnsureFree(int vertexCount, int indexCount)
         {
             var vfree = _vb.Length - VerticesSubmitted;
