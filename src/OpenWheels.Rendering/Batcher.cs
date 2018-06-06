@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace OpenWheels.Rendering
 {
@@ -54,8 +55,10 @@ namespace OpenWheels.Rendering
             }
         }
 
-        public const int DefaultMaxVertices = 2048;
-        public const int DefaultMaxIndices = 4096;
+        public const int DefaultMaxVertices = 4096;
+        public const int DefaultMaxIndices = 8192;
+        public const int MinVertexInc = 512;
+        public const int MinIndexInc = 512;
 
         /// <summary>
         /// The renderer that actually executes the draw calls.
@@ -71,17 +74,19 @@ namespace OpenWheels.Rendering
             }
         }
 
-        private readonly Vertex[] _vb;
-        private readonly int[] _ib;
+        private Vertex[] _vb;
+        private int[] _ib;
 
         private int _nextToDraw;
         private int _indicesInBatch;
+        private int IndicesSubmitted => _nextToDraw + _indicesInBatch;
         private GraphicsState _lastGraphicsState;
         private int _verticesSubmitted;
 
         private readonly List<BatchInfo> _batches;
         private Sprite _sprite;
         private RectangleF _spriteUv;
+        private bool _useSpriteUv;
         private IRenderer _renderer;
         private BlendState _blendState;
         private SamplerState _samplerState;
@@ -114,11 +119,20 @@ namespace OpenWheels.Rendering
                     Flush();
                 _sprite = value;
                 var texSize = Renderer.GetTextureSize(_sprite.Texture);
-                _spriteUv = new RectangleF(
-                    (float) _sprite.SrcRect.X / texSize.X,
-                    (float) _sprite.SrcRect.Y / texSize.Y,
-                    (float) _sprite.SrcRect.Width / texSize.X,
-                    (float) _sprite.SrcRect.Height / texSize.Y);
+                if (texSize == _sprite.SrcRect.Size)
+                {
+                    _spriteUv = RectangleF.Unit;
+                    _useSpriteUv = false;
+                }
+                else
+                {
+                    _spriteUv = new RectangleF(
+                        (float) _sprite.SrcRect.X / texSize.X,
+                        (float) _sprite.SrcRect.Y / texSize.Y,
+                        (float) _sprite.SrcRect.Width / texSize.X,
+                        (float) _sprite.SrcRect.Height / texSize.Y);
+                    _useSpriteUv = true;
+                }
             }
         }
 
@@ -265,14 +279,22 @@ namespace OpenWheels.Rendering
         /// <param name="points">The points on the line strip.</param>
         /// <param name="color">Color of the line strip.</param>
         /// <param name="lineWidth">Stroke width.</param>
-        /// <exception cref="Exception">If <paramref name="points"/> has less than 2 points.</exception>
-        public void DrawLineStrip(IEnumerable<Vector2> points, Color color, float lineWidth = 1)
+        /// <param name="maxCount">When specified only this amount of points are drawn.</param>
+        /// <exception cref="Exception">
+        ///   If <paramref name="points"/> has less than 2 points or <paramref name="maxCount"/> is less than 2.
+        /// </exception>
+        public void DrawLineStrip(IEnumerable<Vector2> points, Color color, float lineWidth = 1, int? maxCount = null)
         {
-            if (points.CountLessThan(2))
+            var c = maxCount ?? points.Count();
+            if (c < 2)
                 throw new Exception("Need at least 2 vertices for a line strip.");
 
+            var vertexCount = c * 4;
+            var indexCount = c * 6;
+            EnsureFree(vertexCount, indexCount);
+
             var p1 = points.First();
-            foreach (var p2 in points.Skip(1))
+            foreach (var p2 in points.Skip(1).Take(c - 1))
             {
                 DrawLine(p1, p2, color, lineWidth);
                 p1 = p2;
@@ -282,7 +304,7 @@ namespace OpenWheels.Rendering
         #endregion
 
         #region Triangle
-        
+
         /// <summary>
         /// Fill a triangle.
         /// </summary>
@@ -397,6 +419,8 @@ namespace OpenWheels.Rendering
         /// <param name="v3">The fourth vertex.</param>
         public void FillQuad(Vertex v0, Vertex v1, Vertex v2, Vertex v3)
         {
+            EnsureFree(4, 6);
+
             var i1 = AddVertex(v0);
             var i2 = AddVertex(v1);
             var i3 = AddVertex(v2);
@@ -436,7 +460,7 @@ namespace OpenWheels.Rendering
             var v2 = CreateVertex(rect.TopRight,    r.TopRight,    c2);
             var v3 = CreateVertex(rect.BottomRight, r.BottomRight, c3);
             var v4 = CreateVertex(rect.BottomLeft,  r.BottomLeft,  c4);
-            
+
             FillQuad(v1, v2, v3, v4);
         }
 
@@ -528,7 +552,7 @@ namespace OpenWheels.Rendering
         public void DrawCircleSegment(Vector2 center, float radius, float start, float end, Color color, int sides, float lineWidth = 1)
         {
             var ps = CreateCircleSegment(center, radius, sides, start, end);
-            DrawLineStrip(ps, color, lineWidth);
+            DrawLineStrip(ps, color, lineWidth, sides + 1);
         }
 
         /// <summary>
@@ -587,7 +611,7 @@ namespace OpenWheels.Rendering
             }
             yield return center + new Vector2((float) (radius * Math.Cos(end)), (float) (radius * Math.Sin(end)));
         }
- 
+
         #endregion
 
         #region Low level
@@ -596,13 +620,21 @@ namespace OpenWheels.Rendering
         /// Fill a triangle strip.
         /// </summary>
         /// <param name="ps">Vertices of the triangle strip.</param>
-        /// <exception cref="Exception">If less than 3 vertices are passed.</exception>
-        public void FillTriangleStrip(IEnumerable<Vertex> ps)
+        /// <param name="maxCount">When specified only this amount of points are drawn.</param>
+        /// <exception cref="Exception">
+        ///   If less than 3 vertices are passed or <paramref name="maxCount"/> is less than 3.
+        /// </exception>
+        public void FillTriangleStrip(IEnumerable<Vertex> ps, int? maxCount = null)
         {
-            if (ps.CountLessThan(3))
+            var c = maxCount ?? ps.Count();
+            if (c < 3)
                 throw new Exception("Need at least 3 vertices for a triangle strip.");
 
-            using (var en = ps.GetEnumerator())
+            var vertexCount = c;
+            var indexCount = (c - 2) * 3;
+            EnsureFree(vertexCount, indexCount);
+
+            using (var en = ps.Take(c).GetEnumerator())
             {
                 en.MoveNext();
                 var v1 = AddVertex(en.Current);
@@ -626,11 +658,19 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="center">The center vertex.</param>
         /// <param name="vs">The other vertices.</param>
-        /// <exception cref="Exception">If <paramref name="vs"/> has less than 2 vertices.</exception>
-        public void FillTriangleFan(Vertex center, IEnumerable<Vertex> vs)
+        /// <param name="maxCount">When specified only this amount of points are drawn.</param>
+        /// <exception cref="Exception">
+        ///   If <paramref name="vs"/> has less than 2 vertices or <paramref name="maxCount"/> is less than 2.
+        /// </exception>
+        public void FillTriangleFan(Vertex center, IEnumerable<Vertex> vs, int? maxCount = null)
         {
-            if (vs.CountLessThan(2))
+            var c = maxCount ?? vs.Count();
+            if (c < 2)
                 throw new Exception("Need at least 3 vertices for a triangle fan.");
+
+            var vertexCount = c + 1;
+            var indexCount = (c - 1) * 3;
+            EnsureFree(vertexCount, indexCount);
 
             using (var en = vs.GetEnumerator())
             {
@@ -727,14 +767,20 @@ namespace OpenWheels.Rendering
 
         #endregion
 
-        private Vertex CreateVertex(Vector2 p, Vector2 uv, Color c)
+        public void EnsureFree(int vertexCount, int indexCount)
         {
-            // remap uv from unit rectangle to the uv rectangle of our sprite
-            var actualUv = MathHelper.LinearMap(uv, RectangleF.Unit, _spriteUv);
-            if (_useMatrix)
-                p = Vector2.Transform(p, TransformMatrix);
-            var v3 = new Vector3(p.X, p.Y, 0);
-            return new Vertex(v3, actualUv, c);
+            var vfree = _vb.Length - _verticesSubmitted;
+            if (vfree < vertexCount)
+                Array.Resize(ref _vb, Math.Max(_vb.Length + MinVertexInc, _vb.Length + vertexCount - vfree));
+
+            var ifree = _ib.Length - IndicesSubmitted;
+            if (ifree < indexCount)
+                Array.Resize(ref _ib, Math.Max(_ib.Length + MinIndexInc, _ib.Length + indexCount - ifree));
+        }
+
+        private static Vertex CreateVertex(Vector2 p, Vector2 uv, Color c)
+        {
+            return new Vertex(new Vector3(p.X, p.Y, 0), uv, c);
         }
 
         private int AddVertex(Vector2 position, Color color)
@@ -749,7 +795,7 @@ namespace OpenWheels.Rendering
 
         private int AddVertex(Vertex v)
         {
-            TransformVertexPosition(ref v, ref _transformMatrix);
+            TransformVertex(ref v);
             var i = _verticesSubmitted;
             _vb[i] = v;
             _verticesSubmitted++;
@@ -763,10 +809,14 @@ namespace OpenWheels.Rendering
             _indicesInBatch++;
         }
 
-        private static void TransformVertexPosition(ref Vertex vertex, ref Matrix4x4 transformMatrix)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void TransformVertex(ref Vertex vertex)
         {
-            var newPos = Vector3.Transform(vertex.Position, transformMatrix);
-            vertex = new Vertex(newPos, vertex.Uv, vertex.Color);
+            // remap uv from unit rectangle to the uv rectangle of our sprite
+            if (_useSpriteUv)
+                vertex.Uv = MathHelper.LinearMap(vertex.Uv, RectangleF.Unit, _spriteUv);
+            if (_useMatrix)
+                vertex.Position = Vector3.Transform(vertex.Position, TransformMatrix);
         }
 
         private GraphicsState CreateCurrentGraphicsState()
