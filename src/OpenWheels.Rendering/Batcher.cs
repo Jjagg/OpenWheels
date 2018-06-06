@@ -79,9 +79,12 @@ namespace OpenWheels.Rendering
 
         private int _nextToDraw;
         private int _indicesInBatch;
-        private int IndicesSubmitted => _nextToDraw + _indicesInBatch;
         private GraphicsState _lastGraphicsState;
-        private int _verticesSubmitted;
+
+        public int VertexBufferSize => _vb.Length;
+        public int IndexBufferSize => _ib.Length;
+        public int IndicesSubmitted => _nextToDraw + _indicesInBatch;
+        public int VerticesSubmitted { get; private set; }
 
         private readonly List<BatchInfo> _batches;
         private Sprite _sprite;
@@ -701,7 +704,7 @@ namespace OpenWheels.Rendering
             _batches.Clear();
             _nextToDraw = 0;
             _indicesInBatch = 0;
-            _verticesSubmitted = 0;
+            VerticesSubmitted = 0;
 
             BatchCount = 0;
         }
@@ -769,7 +772,7 @@ namespace OpenWheels.Rendering
 
         public void EnsureFree(int vertexCount, int indexCount)
         {
-            var vfree = _vb.Length - _verticesSubmitted;
+            var vfree = _vb.Length - VerticesSubmitted;
             if (vfree < vertexCount)
                 Array.Resize(ref _vb, Math.Max(_vb.Length + MinVertexInc, _vb.Length + vertexCount - vfree));
 
@@ -796,9 +799,9 @@ namespace OpenWheels.Rendering
         private int AddVertex(Vertex v)
         {
             TransformVertex(ref v);
-            var i = _verticesSubmitted;
+            var i = VerticesSubmitted;
             _vb[i] = v;
-            _verticesSubmitted++;
+            VerticesSubmitted++;
             return i;
         }
 
