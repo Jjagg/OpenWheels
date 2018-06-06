@@ -573,12 +573,17 @@ namespace OpenWheels.Rendering
         private static IEnumerable<Vector2> CreateCircleSegment(Vector2 center, float radius, int sides, float start, float end)
         {
             var step = (end - start) / sides;
+            var rotX = Math.Cos(step);
+            var rotY = Math.Sin(step);
             var theta = start;
 
+            var vx = radius * Math.Cos(theta);
+            var vy = radius * Math.Sin(theta);
             for (var i = 0; i < sides; i++)
             {
-                yield return center + new Vector2((float) (radius * Math.Cos(theta)), (float) (radius * Math.Sin(theta)));
-                theta += step;
+                yield return new Vector2((float) (center.X + vx), (float) (center.Y + vy));
+                vx = vx * rotX - vy * rotY;
+                vy = vy * rotX + vx * rotY;
             }
             yield return center + new Vector2((float) (radius * Math.Cos(end)), (float) (radius * Math.Sin(end)));
         }
