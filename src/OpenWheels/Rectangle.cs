@@ -115,6 +115,11 @@ namespace OpenWheels
         public Point2 HalfExtents => new Point2(Width / 2, Height / 2);
 
         /// <summary>
+        /// Aspect ratio of the rectangle. Equal to <see cref="Width"/> / <see cref="Height"/>.
+        /// </summary>
+        public float AspectRatio => Width / (float) Height;
+
+        /// <summary>
         /// Create a rectangle.
         /// </summary>
         /// <param name="x">X coordinate of the rectangle.</param>
@@ -136,6 +141,16 @@ namespace OpenWheels
         /// <param name="size">Size of the rectangle.</param>
         public Rectangle(Point2 pos, Point2 size)
             : this(pos.X, pos.Y, size.X, size.Y)
+        {
+        }
+
+        /// <summary>
+        /// Create a new rectangle.
+        /// </summary>
+        /// <param name="pos">Coordinates of the top left point of the rectangle.</param>
+        /// <param name="size">Size of the rectangle.</param>
+        public Rectangle(Point2 pos, Size size)
+            : this(pos.X, pos.Y, size.Width, size.Height)
         {
         }
 

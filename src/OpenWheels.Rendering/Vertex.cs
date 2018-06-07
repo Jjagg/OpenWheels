@@ -16,5 +16,7 @@ namespace OpenWheels.Rendering
             Uv = uv;
             Color = color;
         }
+
+        public const int SizeInBytes = 24;
     }
 }

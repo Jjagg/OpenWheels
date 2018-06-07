@@ -55,8 +55,8 @@ namespace OpenWheels.Rendering
             }
         }
 
-        public const int DefaultMaxVertices = 4096;
-        public const int DefaultMaxIndices = 8192;
+        public const int InitialMaxVertices = 4096;
+        public const int InitialMaxIndices = 8192;
         public const int MinVertexInc = 512;
         public const int MinIndexInc = 512;
 
@@ -210,8 +210,8 @@ namespace OpenWheels.Rendering
         {
             Renderer = renderer;
 
-            _vb = new Vertex[DefaultMaxVertices];
-            _ib = new int[DefaultMaxIndices];
+            _vb = new Vertex[InitialMaxVertices];
+            _ib = new int[InitialMaxIndices];
 
             _batches = new List<BatchInfo>();
             _lastGraphicsState = GraphicsState.Default;
@@ -600,17 +600,12 @@ namespace OpenWheels.Rendering
         private static IEnumerable<Vector2> CreateCircleSegment(Vector2 center, float radius, int sides, float start, float end)
         {
             var step = (end - start) / sides;
-            var rotX = Math.Cos(step);
-            var rotY = Math.Sin(step);
             var theta = start;
 
-            var vx = radius * Math.Cos(theta);
-            var vy = radius * Math.Sin(theta);
             for (var i = 0; i < sides; i++)
             {
-                yield return new Vector2((float) (center.X + vx), (float) (center.Y + vy));
-                vx = vx * rotX - vy * rotY;
-                vy = vy * rotX + vx * rotY;
+                yield return new Vector2((float) (center.X + radius * Math.Cos(theta)), (float) (center.Y + radius * Math.Sin(theta)));
+                theta += step;
             }
             yield return center + new Vector2((float) (radius * Math.Cos(end)), (float) (radius * Math.Sin(end)));
         }
@@ -725,10 +720,10 @@ namespace OpenWheels.Rendering
             // register last batch if necessary
             Flush();
 
-            Renderer.BeginRender();
+            Renderer.BeginRender(_vb, _ib, VerticesSubmitted, IndicesSubmitted);
 
             foreach (var batch in _batches)
-                Renderer.DrawBatch(batch.GraphicsState, _vb, _ib, batch.Startindex, batch.IndexCount, batch.UserData);
+                Renderer.DrawBatch(batch.GraphicsState, batch.Startindex, batch.IndexCount, batch.UserData);
 
             Renderer.EndRender();
         }

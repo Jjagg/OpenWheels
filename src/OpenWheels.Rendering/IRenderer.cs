@@ -29,12 +29,12 @@ namespace OpenWheels.Rendering
         /// <summary>
         /// Called right before calls to <see cref="DrawBatch"/> to indicate that batches will be drawn.
         /// </summary>
-        void BeginRender();
+        void BeginRender(Vertex[] vertexBuffer, int[] indexBuffer, int vertexCount, int indexCount);
 
         /// <summary>
         /// Draw a batch of vertices.
         /// </summary>
-        void DrawBatch(GraphicsState state, Vertex[] vertexBuffer, int[] indexBuffer, int startIndex, int indexCount, object batchUserData);
+        void DrawBatch(GraphicsState state, int startIndex, int indexCount, object batchUserData);
 
         /// <summary>
         /// Called after a set of batches is drawn.
@@ -50,8 +50,8 @@ namespace OpenWheels.Rendering
         public Point2 GetTextureSize(int texture) => Point2.Zero;
         public Vector2 GetTextSize(string text, int font) => Vector2.Zero;
         public Rectangle GetViewport() => Rectangle.Empty;
-        public void BeginRender() { }
-        public void DrawBatch(GraphicsState state, Vertex[] vertexBuffer, int[] indexBuffer, int startIndex, int indexCount, object batchUserData) { }
+        public void BeginRender(Vertex[] vertexBuffer, int[] indexBuffer, int vertexCount, int indexCount) { }
+        public void DrawBatch(GraphicsState state, int startIndex, int indexCount, object batchUserData) { }
         public void EndRender() { }
     }
 
@@ -97,16 +97,16 @@ namespace OpenWheels.Rendering
             return DelegateRenderer.GetViewport();
         }
 
-        public void BeginRender()
+        public void BeginRender(Vertex[] vertexBuffer, int[] indexBuffer, int vertexCount, int indexCount)
         {
-            Write("BeginRender()");
-            DelegateRenderer.BeginRender();
+            Write($"BeginRender(vb, ib, {vertexCount}, {indexCount})");
+            DelegateRenderer.BeginRender(vertexBuffer, indexBuffer, vertexCount, indexCount);
         }
 
-        public void DrawBatch(GraphicsState state, Vertex[] vertexBuffer, int[] indexBuffer, int startIndex, int indexCount, object batchUserData)
+        public void DrawBatch(GraphicsState state, int startIndex, int indexCount, object batchUserData)
         {
-            Write($"DrawBatch({state}, {vertexBuffer}, {indexBuffer}, {startIndex}, {indexCount}, {batchUserData})");
-            DelegateRenderer.DrawBatch(state, vertexBuffer, indexBuffer, startIndex, indexCount, batchUserData);
+            Write($"DrawBatch(state, {startIndex}, {indexCount}, {batchUserData})");
+            DelegateRenderer.DrawBatch(state, startIndex, indexCount, batchUserData);
         }
 
         public void EndRender()

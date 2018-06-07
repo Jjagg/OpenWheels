@@ -1,9 +1,11 @@
-﻿namespace OpenWheels.Rendering
+﻿using System;
+
+namespace OpenWheels.Rendering
 {
     /// <summary>
     /// Holds graphics state for rendering.
     /// </summary>
-    public struct GraphicsState
+    public struct GraphicsState : IEquatable<GraphicsState>
     {
         /// <summary>
         /// The texture to render.
@@ -45,6 +47,39 @@
             BlendState = blendState;
             SamplerState = samplerState;
             ScissorRect = scissorRect;
+        }
+
+        public bool Equals(GraphicsState other)
+        {
+            return Texture == other.Texture && BlendState == other.BlendState && SamplerState == other.SamplerState && ScissorRect.Equals(other.ScissorRect);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is GraphicsState && Equals((GraphicsState) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = Texture;
+                hashCode = (hashCode * 397) ^ (int) BlendState;
+                hashCode = (hashCode * 397) ^ (int) SamplerState;
+                hashCode = (hashCode * 397) ^ ScissorRect.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        public static bool operator ==(GraphicsState left, GraphicsState right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(GraphicsState left, GraphicsState right)
+        {
+            return !left.Equals(right);
         }
 
         /// <summary>
