@@ -8,26 +8,26 @@
         /// <summary>
         /// Linear filtering and texture coordinate clamping.
         /// </summary>
-        LinearClamp,
+        LinearClamp = 0,
         /// <summary>
         /// Linear filtering and texture coordinate wrapping.
         /// </summary>
-        LinearWrap,
+        LinearWrap = 1,
         /// <summary>
         /// Point filtering and texture coordinate clamping.
         /// </summary>
-        PointClamp,
+        PointClamp = 2,
         /// <summary>
         /// Point filtering and texture coordinate wrapping.
         /// </summary>
-        PointWrap,
+        PointWrap = 3,
         /// <summary>
         /// Anisotropic filtering and texture coordinate clamping.
         /// </summary>
-        AnisotropicClamp,
+        AnisotropicClamp = 4,
         /// <summary>
         /// Anisotropic filtering and texture coordinate wrapping.
         /// </summary>
-        AnisotropicWrap
+        AnisotropicWrap = 5
     }
 }

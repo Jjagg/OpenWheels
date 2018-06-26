@@ -9,11 +9,11 @@
         /// Alpha blend source on top of destination assuming premultiplied alpha.
         /// I.e. blend = src.rgb + (dst.rgb * (1 - src.a))
         /// </summary>
-        AlphaBlend,
+        AlphaBlend = 0,
         /// <summary>
         /// Render the source color without blending.
         /// I.e. blend = src.rgb
         /// </summary>
-        Opaque
+        Opaque = 1
     }
 }
