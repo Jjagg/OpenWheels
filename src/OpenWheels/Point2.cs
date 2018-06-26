@@ -1,4 +1,6 @@
-﻿#if NETSTANDARD2_0
+﻿using System.Numerics;
+
+#if NETSTANDARD2_0
 using System.Diagnostics.Contracts;
 using System.ComponentModel;
 using System.Runtime.Serialization;
@@ -95,6 +97,16 @@ namespace OpenWheels
         {
             x = X;
             y = Y;
+        }
+
+        /// <summary>
+        /// Convert this <see cref="Point2"/> to a <see cref="Vector2"/>.
+        /// </summary>
+        /// <param name="p">Point to convert.</param>
+        /// <returns>A <see cref="Vector2"/> with the same x and y values as the given point.</returns>
+        public static explicit operator Vector2(Point2 p)
+        {
+            return new Vector2(p.X, p.Y);
         }
 
 #if NETSTANDARD2_0
