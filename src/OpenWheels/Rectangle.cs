@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Numerics;
 
 #if NETSTANDARD2_0
 using System.Diagnostics.Contracts;
@@ -102,7 +103,7 @@ namespace OpenWheels
         /// <summary>
         /// Center of the rectangle.
         /// </summary>
-        public Point2 Center => new Point2(X + Width / 2, Y + Height / 2);
+        public Vector2 Center => new Vector2(X + Width / 2, Y + Height / 2);
 
         /// <summary>
         /// Size of the rectangle.
