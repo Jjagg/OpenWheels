@@ -1,13 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard1.1;netstandard2.0</TargetFrameworks>
-    <LangVersion>7.1</LangVersion>
+    <LangVersion>7.2</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="System.Numerics.Vectors" Version="4.4.0" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0-preview1-26216-02" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Margy\OpenWheels.Fonts\OpenWheels.Fonts.csproj" />
     <ProjectReference Include="..\OpenWheels\OpenWheels.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Memory, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
+      <HintPath>C:\Users\jesse\.nuget\packages\system.memory\4.5.1\ref\netstandard1.1\System.Memory.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <PropertyGroup>
     <Description>Backend-agnostic 2D geometry batcher for GPU rendering.</Description>

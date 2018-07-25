@@ -101,9 +101,19 @@ namespace OpenWheels
         public Point2 BottomLeft => new Point2(Left, Bottom);
         
         /// <summary>
+        /// X coordinate of the center of the rectangle.
+        /// </summary>
+        public float CenterX => X + Width / 2;
+
+        /// <summary>
+        /// Y coordinate of the center of the rectangle.
+        /// </summary>
+        public float CenterY => Y + Height / 2;
+
+        /// <summary>
         /// Center of the rectangle.
         /// </summary>
-        public Vector2 Center => new Vector2(X + Width / 2, Y + Height / 2);
+        public Vector2 Center => new Vector2(CenterX, CenterY);
 
         /// <summary>
         /// Size of the rectangle.
@@ -260,6 +270,36 @@ namespace OpenWheels
                 hashCode = (hashCode * 397) ^ Height;
                 return hashCode;
             }
+        }
+
+        /// <summary>
+        /// Check if two rectangles overlap.
+        /// </summary>
+        /// <param name="first">The first rectangle.</param>
+        /// <param name="second">The second rectangle.</param>
+        /// <returns><c>true</c> if the rectangles overlap, <c>false</c> if they don't.</returns>
+        public static bool Overlap(in Rectangle first, in Rectangle second)
+        {
+            return first.Left < second.Right &&
+                   first.Right > second.Left &&
+                   first.Top < second.Bottom &&
+                   first.Bottom > second.Top;
+
+        }
+
+        /// <summary>
+        /// Check if two rectangles overlap.
+        /// </summary>
+        /// <param name="first">The first rectangle.</param>
+        /// <param name="second">The second rectangle.</param>
+        /// <returns><c>true</c> if the rectangles overlap, <c>false</c> if they don't.</returns>
+        public static bool Overlap(Rectangle first, Rectangle second)
+        {
+            return first.Left < second.Right &&
+                   first.Right > second.Left &&
+                   first.Top < second.Bottom &&
+                   first.Bottom > second.Top;
+
         }
 
         public static bool operator ==(Rectangle left, Rectangle right)

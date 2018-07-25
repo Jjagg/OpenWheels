@@ -11,7 +11,7 @@
         public readonly int Texture;
         
         /// <summary>
-        /// Source rectangle of the sprite in the texture.
+        /// Source rectangle of the sprite in the texture in pixels.
         /// </summary>
         public readonly Rectangle SrcRect;
 
@@ -19,7 +19,7 @@
         /// Create a new Sprite.
         /// </summary>
         /// <param name="texture">The texture identifier.</param>
-        /// <param name="srcRect">The source rectangle of the sprite.</param>
+        /// <param name="srcRect">The source rectangle of the sprite in pixels.</param>
         public Sprite(int texture, Rectangle srcRect)
         {
             Texture = texture;

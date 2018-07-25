@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Text;
+using SixLabors.Fonts;
 
 namespace OpenWheels.Rendering
 {
@@ -55,9 +57,26 @@ namespace OpenWheels.Rendering
             }
         }
 
+        /// <summary>
+        /// The initial number of vertices this batcher can hold. The batcher will grow its buffer if needed.
+        /// </summary>
         public const int InitialMaxVertices = 4096;
+
+        /// <summary>
+        /// The initial number of indices this batcher can hold. The batcher will grow its buffer if needed.
+        /// </summary>
         public const int InitialMaxIndices = 8192;
+
+        /// <summary>
+        /// The minimal increase in vertex buffer size. If the vertex buffer needs more space it will grow
+        /// by at least this amount; more if necessary.
+        /// </summary>
         public const int MinVertexInc = 512;
+
+        /// <summary>
+        /// The minimal increase in index buffer size. If the index buffer needs more space it will grow
+        /// by at least this amount; more if necessary.
+        /// </summary>
         public const int MinIndexInc = 512;
 
         /// <summary>
@@ -79,15 +98,30 @@ namespace OpenWheels.Rendering
 
         private int _nextToDraw;
         private int _indicesInBatch;
-        private GraphicsState _lastGraphicsState;
 
+        /// <summary>
+        /// The size of the vertex buffer. Initialized to <see cref="InitialMaxVertices"/>.
+        /// </summary>
         public int VertexBufferSize => _vb.Length;
+
+        /// <summary>
+        /// The size of the index buffer. Initialized to <see cref="InitialMaxIndices"/>.
+        /// </summary>
         public int IndexBufferSize => _ib.Length;
+
+        /// <summary>
+        /// The number of indices submitted since the last call to <see cref="Clear"/>.
+        /// </summary>
         public int IndicesSubmitted => _nextToDraw + _indicesInBatch;
+
+        /// <summary>
+        /// The number of indices submitted since the last call to <see cref="Clear"/>.
+        /// </summary>
         public int VerticesSubmitted { get; private set; }
 
         private readonly List<BatchInfo> _batches;
         private Sprite _sprite;
+        private TextureFont _font;
         private RectangleF _spriteUv;
         private bool _useSpriteUv;
         private IRenderer _renderer;
@@ -118,7 +152,7 @@ namespace OpenWheels.Rendering
             get => _sprite;
             set
             {
-                if (value.Texture != _lastGraphicsState.Texture)
+                if (value.Texture != Sprite.Texture)
                     Flush();
                 _sprite = value;
                 var texSize = Renderer.GetTextureSize(_sprite.Texture);
@@ -136,6 +170,23 @@ namespace OpenWheels.Rendering
                         (float) _sprite.SrcRect.Height / texSize.Y);
                     _useSpriteUv = true;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Get or set the font used for rendering text.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">If the value passed to the setter is <c>null</c>.</exception>
+        public TextureFont Font
+        {
+            get => _font;
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+                _font = value;
+                // TODO glyph map contains pixel boundaries, maybe change to UV
+                //      less generic but more efficient for us
             }
         }
 
@@ -195,6 +246,13 @@ namespace OpenWheels.Rendering
         public object BatchData { get; set; }
 
         /// <summary>
+        /// A blank white sprite. Implementors are expected to follow this convention, either
+        /// by having the texture with id 0 be completely white or by having the texture with id
+        /// 0 having a white first pixel.
+        /// </summary>
+        public static readonly Sprite BlankSprite = new Sprite(0, Rectangle.Unit);
+
+        /// <summary>
         /// Create a <see cref="Batcher"/> with a <see cref="NullRenderer"/>.
         /// </summary>
         public Batcher()
@@ -214,7 +272,6 @@ namespace OpenWheels.Rendering
             _ib = new int[InitialMaxIndices];
 
             _batches = new List<BatchInfo>();
-            _lastGraphicsState = GraphicsState.Default;
 
             TransformMatrix = Matrix4x4.Identity;
         }
@@ -238,6 +295,14 @@ namespace OpenWheels.Rendering
         {
             var size = Renderer.GetTextureSize(texture);
             Sprite = new Sprite(texture, new Rectangle(0, 0, size.X, size.Y));
+        }
+
+        /// <summary>
+        /// Set the fill texture to a white pixel.
+        /// </summary>
+        public void SetBlankSprite()
+        {
+            Sprite = BlankSprite;
         }
 
         /// <summary>
@@ -384,7 +449,8 @@ namespace OpenWheels.Rendering
                 radiusTr > rectangle.Width / 2f || radiusTr > rectangle.Height / 2f ||
                 radiusBr > rectangle.Width / 2f || radiusBr > rectangle.Height / 2f ||
                 radiusBl > rectangle.Width / 2f || radiusBl > rectangle.Height / 2f)
-                throw new Exception("Radius too large");
+                throw new Exception($"Radius too large. The rectangle size is ({rectangle.Size.X}, {rectangle.Size.Y}), " +
+                                    $"radii of the corners are (TL: {radiusTl}, TR: {radiusTr}, BR: {radiusBr}, Bl: {radiusBl}).");
 
             if (radiusTl == 0 && radiusTr == 0 && radiusBr == 0 && radiusBl == 0)
             {
@@ -479,7 +545,7 @@ namespace OpenWheels.Rendering
         public void FillRoundedRect(RectangleF rectangle, float radius, int segments, Color color, RectangleF? uvRect = null)
         {
             if (radius > rectangle.Width / 2f || radius > rectangle.Height / 2f)
-                throw new Exception("Radius too large");
+                throw new Exception($"Radius too large. The rectangle size is ({rectangle.Size.X}, {rectangle.Size.Y}), the radius is {radius}.");
 
             if (radius == 0)
             {
@@ -612,6 +678,60 @@ namespace OpenWheels.Rendering
 
         #endregion
 
+        #region Text
+
+        /// <summary>
+        /// Render text with the active font. Changes the active <see cref="Sprite"/>.
+        /// </summary>
+        /// <param name="text">The text to draw.</param>
+        /// <param name="position">Position to draw the text at.</param>
+        /// <param name="color">Color of the text.</param>
+        /// <param name="scale">Scale of the text.</param>
+        /// <param name="ha">Horizontal alignment of the text.</param>
+        /// <param name="va">Vertical alignment of the text.</param>
+        /// <param name="wrappingWidth">Width to wrap the text at. Pass -1 to not wrap (default).</param>
+        /// <param name="tabWidth">Number of spaces in a tab.</param>
+        /// <exception cref="Exception">
+        ///   If a character from the given text has no glyph registered in the
+        ///   active font and no fallback character is set.
+        /// </exception>
+        /// <seealso cref="Font"/>
+        public void DrawText(string text, Vector2 position, Color color, float scale = 1f,
+            HorizontalAlignment ha = HorizontalAlignment.Left, VerticalAlignment va = VerticalAlignment.Top,
+            float wrappingWidth = -1f, float tabWidth = 4)
+        {
+            if (Font == null)
+                throw new InvalidOperationException("No font is set.");
+
+            var slFont = Font.GlyphMap.Font;
+            // TODO there is no setter for Font on RendererOptions, once there is we can cache an instance
+            var dpi = 72 * scale;
+            var ro = new RendererOptions(slFont, dpi, dpi, position);
+            ro.HorizontalAlignment = ha;
+            ro.VerticalAlignment = va;
+            ro.WrappingWidth = wrappingWidth;
+            ro.TabWidth = tabWidth;
+            // TODO this generates garbage; should push for an overload to use an existing collection
+            // TODO StringBuilder overload
+            TextMeasurer.TryMeasureCharacterBounds(text, ro, out var gms);
+
+            foreach (var gm in gms)
+            {
+                var gd = Font.GlyphMap.GetGlyphData(gm.Codepoint);
+                if (gd.Character == 0)
+                {
+                    if (Font.FallbackCharacter.HasValue)
+                        throw new Exception($"Character '{gm.Character}' is missing from the glyph map of active font and no fallback character is set.");
+                    gd = Font.FallbackGlyphData;
+                }
+
+                Sprite = new Sprite(Font.Texture, gd.Bounds);
+                FillRect(gm.Bounds.ToOwRect(), color);
+            }
+        }
+
+        #endregion
+
         #region Low level
 
         /// <summary>
@@ -728,28 +848,13 @@ namespace OpenWheels.Rendering
             Renderer.EndRender();
         }
 
-        private void CheckFlush()
-        {
-            if (_indicesInBatch == 0 && BatchData == null)
-                return;
-
-            var gs = CreateCurrentGraphicsState();
-            if (!_lastGraphicsState.Equals(gs))
-                Flush(gs);
-        }
-
         /// <summary>
         /// End the current batch.
         /// </summary>
         public void Flush()
         {
             var gs = CreateCurrentGraphicsState();
-            Flush(gs);
-        }
 
-        private void Flush(GraphicsState gs)
-        {
-            _lastGraphicsState = gs;
             // if nothing to flush
             if (_indicesInBatch == 0 && BatchData == null)
                 return;

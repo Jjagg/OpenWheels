@@ -1,8 +1,11 @@
-﻿using System.IO;
-using System.Numerics;
+﻿using System;
+using System.IO;
 
 namespace OpenWheels.Rendering
 {
+    /// <summary>
+    /// Interface for renderers that can be used to draw data batched by a <see cref="Batcher"/>.
+    /// </summary>
     public interface IRenderer
     {
         /// <summary>
@@ -11,14 +14,6 @@ namespace OpenWheels.Rendering
         /// <param name="texture">The identifier of the texture.</param>
         /// <returns>The size of the texture in pixels.</returns>
         Point2 GetTextureSize(int texture);
-
-        /// <summary>
-        /// Get the size of some text.
-        /// </summary>
-        /// <param name="text">Text to measure.</param>
-        /// <param name="font">Font of the text.</param>
-        /// <returns>The size of the text if rendered in the given font.</returns>
-        Vector2 GetTextSize(string text, int font);
 
         /// <summary>
         /// Get the current viewport of the renderer.
@@ -47,24 +42,56 @@ namespace OpenWheels.Rendering
     /// </summary>
     public sealed class NullRenderer : IRenderer
     {
+        /// <inheritdoc />
         public Point2 GetTextureSize(int texture) => Point2.Zero;
-        public Vector2 GetTextSize(string text, int font) => Vector2.Zero;
+        /// <inheritdoc />
         public Rectangle GetViewport() => Rectangle.Empty;
+        /// <inheritdoc />
         public void BeginRender(Vertex[] vertexBuffer, int[] indexBuffer, int vertexCount, int indexCount) { }
+        /// <inheritdoc />
         public void DrawBatch(GraphicsState state, int startIndex, int indexCount, object batchUserData) { }
+        /// <inheritdoc />
         public void EndRender() { }
     }
 
     /// <summary>
-    /// A renderer implementation that stores can write out method calls and
+    /// A renderer implementation that can write out method calls and
     /// delegates calls to another renderer.
     /// </summary>
-    public class TraceRenderer : IRenderer
+    public sealed class TraceRenderer : IRenderer
     {
-        public IRenderer DelegateRenderer { get; set; }
-        public TextWriter Writer { get; set; }
-        public string Prefix { get; set; }
+        private IRenderer _delegateRenderer;
 
+        /// <summary>
+        /// The renderer that this renderer delegates its calls to after writing them out to the <see cref="Writer"/>.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">If <c>null</c> is passed to the setter.</exception>
+        public IRenderer DelegateRenderer
+        {
+            get => _delegateRenderer;
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+                _delegateRenderer = value;
+            }
+        }
+
+        /// <summary>
+        /// The writer to write method calls to.
+        /// </summary>
+        public TextWriter Writer { get; set; }
+
+        /// <summary>
+        /// A function that returns the prefix for every line written with the <see cref="Writer"/>.
+        /// If <c>null</c> no prefix is added.
+        /// </summary>
+        public Func<string> Prefix { get; set; }
+
+        /// <summary>
+        /// Create a new <see cref="TraceRenderer"/> with its <see cref="DelegateRenderer"/>
+        /// set to a <see cref="NullRenderer"/>.
+        /// </summary>
         public TraceRenderer()
         {
             DelegateRenderer = new NullRenderer();
@@ -74,41 +101,42 @@ namespace OpenWheels.Rendering
         {
             if (Writer != null)
             {
-                var pre = Prefix ?? string.Empty;
+                var pre = string.Empty;
+                if (Prefix != null)
+                    pre = Prefix();
                 Writer.WriteLine(pre + message);
             }
         }
 
-        public Vector2 GetTextSize(string text, int font)
-        {
-            Write($"GetTextSize(${text}, ${font})");
-            return DelegateRenderer.GetTextSize(text, font);
-        }
-
+        /// <inheritdoc />
         public Point2 GetTextureSize(int texture)
         {
             Write($"GetTextureSize(${texture})");
             return DelegateRenderer.GetTextureSize(texture);
         }
 
+        /// <inheritdoc />
         public Rectangle GetViewport()
         {
             Write("GetViewport()");
             return DelegateRenderer.GetViewport();
         }
 
+        /// <inheritdoc />
         public void BeginRender(Vertex[] vertexBuffer, int[] indexBuffer, int vertexCount, int indexCount)
         {
             Write($"BeginRender(vb, ib, {vertexCount}, {indexCount})");
             DelegateRenderer.BeginRender(vertexBuffer, indexBuffer, vertexCount, indexCount);
         }
 
+        /// <inheritdoc />
         public void DrawBatch(GraphicsState state, int startIndex, int indexCount, object batchUserData)
         {
             Write($"DrawBatch(state, {startIndex}, {indexCount}, {batchUserData})");
             DelegateRenderer.DrawBatch(state, startIndex, indexCount, batchUserData);
         }
 
+        /// <inheritdoc />
         public void EndRender()
         {
             Write("EndRender()");

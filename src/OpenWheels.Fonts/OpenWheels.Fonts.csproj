@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <LangVersion>7.2</LangVersion>
+    <TargetFrameworks>netstandard1.1;netstandard1.3</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OpenWheels\OpenWheels.csproj" />
+    <ProjectReference Include="..\OpenWheels.BinPack\OpenWheels.BinPack.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="SixLabors.Fonts" Version="1.0.0-dev000097" />
+  </ItemGroup>
+</Project>
