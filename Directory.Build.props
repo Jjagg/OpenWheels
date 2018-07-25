@@ -9,9 +9,9 @@
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Nerdbank.GitVersioning">
-      <Version>2.1.65</Version>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+  <PackageReference Include="Nerdbank.GitVersioning">
+    <Version>2.1.65</Version>
+    <PrivateAssets>all</PrivateAssets>
+  </PackageReference>
   </ItemGroup>
 </Project>
