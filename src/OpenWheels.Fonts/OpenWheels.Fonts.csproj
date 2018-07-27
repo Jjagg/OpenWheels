@@ -3,6 +3,12 @@
     <LangVersion>7.2</LangVersion>
     <TargetFrameworks>netstandard1.1;netstandard1.3</TargetFrameworks>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>Font atlas builder for GPU rendering.</Description>
+    <PackageTags>Font Atlas Gpu</PackageTags>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\OpenWheels\OpenWheels.csproj" />
     <ProjectReference Include="..\OpenWheels.BinPack\OpenWheels.BinPack.csproj" />

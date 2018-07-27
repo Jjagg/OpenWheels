@@ -2,6 +2,12 @@
   <PropertyGroup>
     <TargetFramework>netstandard1.1</TargetFramework>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>Rectangular bin packing using the MAXRECTS method.</Description>
+    <PackageTags>Packing MAXRECTS</PackageTags>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\OpenWheels\OpenWheels.csproj" />
   </ItemGroup>

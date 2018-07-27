@@ -2,6 +2,12 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard1.1;netstandard1.3</TargetFrameworks>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>Set up a font atlas using OpenWheels.Fonts and ImageSharp.</Description>
+    <PackageTags>Font Atlas Gpu</PackageTags>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\OpenWheels.Fonts\OpenWheels.Fonts.csproj" />
   </ItemGroup>
