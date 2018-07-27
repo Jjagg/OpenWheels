@@ -4,6 +4,7 @@ dotnet: 2.1.2
 mono: none
 script: dotnet pack -c Release src/OpenWheels.sln
 deploy:
-  provider: script
-  script: dotnet nuget push bin/Release/*.nupkg -k $MYGET_JJAG_API_KEY -s https://www.myget.org/F/jjagg
+  - provider: script
+    skip_cleanup: true
+    script: dotnet nuget push bin/Release/*.nupkg -k $MYGET_JJAG_API_KEY -s https://www.myget.org/F/jjagg
 
