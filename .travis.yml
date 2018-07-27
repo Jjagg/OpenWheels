@@ -1,0 +1,7 @@
+language: csharp
+solution: src/OpenWheels.sln
+dotnet: 2.1.2
+mono: none
+script:
+  - dotnet pack -c Release src/OpenWheels.sln
+
