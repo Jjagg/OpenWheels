@@ -2,6 +2,8 @@ language: csharp
 solution: src/OpenWheels.sln
 dotnet: 2.1.2
 mono: none
-script:
-  - dotnet pack -c Release src/OpenWheels.sln
+script: dotnet pack -c Release src/OpenWheels.sln
+deploy:
+  provider: script
+  script: nuget push bin/Release/*.nupkg $MYGET_JJAG_API_KEY -Source https://www.myget.org/F/jjagg/api/v2/package 
 
