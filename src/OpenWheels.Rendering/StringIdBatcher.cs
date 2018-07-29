@@ -22,9 +22,18 @@ namespace OpenWheels.Rendering
         public Dictionary<string, TextureFont> Fonts { get; }
 
         /// <summary>
-        /// Create a new instance of <see cref="StringIdBatcher" />.
+        /// Create a <see cref="StringIdBatcher"/> with a <see cref="NullRenderer"/>.
         /// </summary>
         public StringIdBatcher()
+            : this(NullRenderer.Instance)
+        {
+        }
+
+        /// <summary>
+        /// Create a <see cref="StringIdBatcher"/> with a renderer.
+        /// </summary>
+        public StringIdBatcher(IRenderer renderer)
+            : base(renderer)
         {
             Sprites = new Dictionary<string, Sprite>();
             Fonts = new Dictionary<string, TextureFont>();

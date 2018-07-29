@@ -57,6 +57,8 @@ namespace OpenWheels.Rendering
     /// </summary>
     public sealed class NullRenderer : IRenderer
     {
+        private NullRenderer() { }
+
         /// <inheritdoc />
         public int RegisterTexture(Span<Color> img, int width, int height) { return -1; }
         /// <inheritdoc />
@@ -69,6 +71,11 @@ namespace OpenWheels.Rendering
         public void DrawBatch(GraphicsState state, int startIndex, int indexCount, object batchUserData) { }
         /// <inheritdoc />
         public void EndRender() { }
+
+        /// <summary>
+        /// The singleton instance of the <see cref="NullRenderer" />.
+        /// </summary>
+        public static NullRenderer Instance = new NullRenderer();
     }
 
     /// <summary>
@@ -111,7 +118,7 @@ namespace OpenWheels.Rendering
         /// </summary>
         public TraceRenderer()
         {
-            DelegateRenderer = new NullRenderer();
+            DelegateRenderer = NullRenderer.Instance;
         }
 
         private void Write(string message)

@@ -256,7 +256,7 @@ namespace OpenWheels.Rendering
         /// Create a <see cref="Batcher"/> with a <see cref="NullRenderer"/>.
         /// </summary>
         public Batcher()
-            : this(new NullRenderer())
+            : this(NullRenderer.Instance)
         {
         }
 
