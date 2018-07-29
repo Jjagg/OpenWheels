@@ -3,5 +3,5 @@ solution: src/OpenWheels.sln
 dotnet: 2.1.300
 mono: none
 script: dotnet pack -c Release src/OpenWheels.sln
-after_success: find bin/Release/ -name '*.nupkg' | xargs -i dotnet nuget push {} -s https://www.myget.org/F/jjagg -k $MYGET_JJAGG_API_KEY
+after_success: dotnet nuget push "bin/Release/*.nupkg" -s https://www.myget.org/F/jjagg -k $MYGET_JJAGG_API_KEY
 
