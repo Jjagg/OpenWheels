@@ -5,15 +5,30 @@ namespace OpenWheels.Rendering
 {
     /// <summary>
     /// Interface for renderers that can be used to draw data batched by a <see cref="Batcher"/>.
+    /// Note that clients do not have to use a renderer directly, unless they need custom rendering
+    /// functionality (using <see cref="Batcher.BatchData" />) or additional functionality not supported
+    /// by <see cref="Batcher" />.
     /// </summary>
     public interface IRenderer
     {
+        /// <summary>
+        /// Register a texture given the image data and its dimensions.
+        /// </summary>
+        /// <param name="pixels">Span of the image data in row-major order.</param>
+        /// <param name="width">Width of the texture in pixels.</param>
+        /// <param name="height">Height of the texture in pixels.</param>
+        /// <returns>The texture identifier after registration.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="pixels" /> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">If <paramref name="width" /> is zero or negative.</exception>
+        /// <exception cref="ArgumentException">If <paramref name="height" /> is zero or negative.</exception>
+        int RegisterTexture(Span<Color> pixels, int width, int height);
+
         /// <summary>
         /// Get the size of a texture.
         /// </summary>
         /// <param name="texture">The identifier of the texture.</param>
         /// <returns>The size of the texture in pixels.</returns>
-        Point2 GetTextureSize(int texture);
+        Size GetTextureSize(int texture);
 
         /// <summary>
         /// Get the current viewport of the renderer.
@@ -43,7 +58,9 @@ namespace OpenWheels.Rendering
     public sealed class NullRenderer : IRenderer
     {
         /// <inheritdoc />
-        public Point2 GetTextureSize(int texture) => Point2.Zero;
+        public int RegisterTexture(Span<Color> img, int width, int height) { return -1; }
+        /// <inheritdoc />
+        public Size GetTextureSize(int texture) => Size.Empty;
         /// <inheritdoc />
         public Rectangle GetViewport() => Rectangle.Empty;
         /// <inheritdoc />
@@ -109,7 +126,14 @@ namespace OpenWheels.Rendering
         }
 
         /// <inheritdoc />
-        public Point2 GetTextureSize(int texture)
+        public int RegisterTexture(Span<Color> img, int width, int height)
+        {
+            Write($"RegisterTexture(<pixels>, ${width}, ${height})");
+            return DelegateRenderer.RegisterTexture(img, width, height);
+        }
+
+        /// <inheritdoc />
+        public Size GetTextureSize(int texture)
         {
             Write($"GetTextureSize(${texture})");
             return DelegateRenderer.GetTextureSize(texture);
@@ -125,14 +149,14 @@ namespace OpenWheels.Rendering
         /// <inheritdoc />
         public void BeginRender(Vertex[] vertexBuffer, int[] indexBuffer, int vertexCount, int indexCount)
         {
-            Write($"BeginRender(vb, ib, {vertexCount}, {indexCount})");
+            Write($"BeginRender(<vertexBuffer>, <indexBuffer>, {vertexCount}, {indexCount})");
             DelegateRenderer.BeginRender(vertexBuffer, indexBuffer, vertexCount, indexCount);
         }
 
         /// <inheritdoc />
         public void DrawBatch(GraphicsState state, int startIndex, int indexCount, object batchUserData)
         {
-            Write($"DrawBatch(state, {startIndex}, {indexCount}, {batchUserData})");
+            Write($"DrawBatch(<state>, {startIndex}, {indexCount}, {batchUserData})");
             DelegateRenderer.DrawBatch(state, startIndex, indexCount, batchUserData);
         }
 

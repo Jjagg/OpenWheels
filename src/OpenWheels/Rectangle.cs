@@ -118,12 +118,12 @@ namespace OpenWheels
         /// <summary>
         /// Size of the rectangle.
         /// </summary>
-        public Point2 Size => new Point2(Width, Height);
+        public Size Size => new Size(Width, Height);
 
         /// <summary>
         /// Half of the size of the rectangle.
         /// </summary>
-        public Point2 HalfExtents => new Point2(Width / 2, Height / 2);
+        public Vector2 HalfExtents => new Vector2(Width / 2f, Height / 2f);
 
         /// <summary>
         /// Aspect ratio of the rectangle. Equal to <see cref="Width"/> / <see cref="Height"/>.
@@ -243,7 +243,7 @@ namespace OpenWheels
             height = Height;
         }
 
-        public void Deconstruct(out Point2 position, out Point2 size)
+        public void Deconstruct(out Point2 position, out Size size)
         {
             position = TopLeft;
             size = Size;

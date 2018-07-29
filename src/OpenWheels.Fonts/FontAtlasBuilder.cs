@@ -45,6 +45,7 @@ namespace OpenWheels.Fonts
         }
 
 #if !NETSTANDARD1_1
+
         /// <summary>
         /// Add a system font with the given name.
         /// </summary>
@@ -111,9 +112,7 @@ namespace OpenWheels.Fonts
         /// </returns>
         /// <seealso cref="TextUtil.ToUtf32"/>
         /// <seealso cref="TextUtil.GroupInRanges"/>
-        /// <exception cref="ArgumentNullException">
-        ///   If <paramref name="characterRanges"/> is <c>null</c>.
-        /// </exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="characterRanges"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">If <paramref name="size"/> is not strictly positive.</exception>
         public FontData AddFont(Stream fontStream, float size, IEnumerable<Range<int>> characterRanges,
             FontStyle style = FontStyle.Regular)

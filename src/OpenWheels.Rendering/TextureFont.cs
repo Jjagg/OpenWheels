@@ -1,4 +1,5 @@
-﻿using OpenWheels.Fonts;
+﻿using System;
+using OpenWheels.Fonts;
 
 namespace OpenWheels.Rendering
 {
@@ -43,9 +44,13 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="glyphMap">Glyph map of the font.</param>
         /// <param name="texture">Texture containing the font atlas.</param>
-        /// <param name="fallbackCharacter">The fallback character.</param>
+        /// <param name="fallbackCharacter">Optional fallback character for the font. Defaults to <c>null</c> (no fallback; an exception will be thrown when a glyph is missing).</param>
+        /// <exception cref="ArgumentNullException">If <paramref name="glyphMap" /> is <c>null</c>.</exception>
         public TextureFont(GlyphMap glyphMap, int texture, int? fallbackCharacter = null)
         {
+            if (glyphMap == null)
+                throw new ArgumentNullException(nameof(glyphMap));
+
             GlyphMap = glyphMap;
             Texture = texture;
             FallbackCharacter = fallbackCharacter;

@@ -164,10 +164,10 @@ namespace OpenWheels.Rendering
                 else
                 {
                     _spriteUv = new RectangleF(
-                        (float) _sprite.SrcRect.X / texSize.X,
-                        (float) _sprite.SrcRect.Y / texSize.Y,
-                        (float) _sprite.SrcRect.Width / texSize.X,
-                        (float) _sprite.SrcRect.Height / texSize.Y);
+                        (float) _sprite.SrcRect.X / texSize.Width,
+                        (float) _sprite.SrcRect.Y / texSize.Height,
+                        (float) _sprite.SrcRect.Width / texSize.Width,
+                        (float) _sprite.SrcRect.Height / texSize.Height);
                     _useSpriteUv = true;
                 }
             }
@@ -177,7 +177,7 @@ namespace OpenWheels.Rendering
         /// Get or set the font used for rendering text.
         /// </summary>
         /// <exception cref="ArgumentNullException">If the value passed to the setter is <c>null</c>.</exception>
-        public TextureFont Font
+        public TextureFont TextureFont
         {
             get => _font;
             set
@@ -276,6 +276,25 @@ namespace OpenWheels.Rendering
             TransformMatrix = Matrix4x4.Identity;
         }
 
+        #region Register Texture
+
+        /// <summary>
+        /// Register a texture given the image data and its dimensions.
+        /// </summary>
+        /// <param name="pixels">Span of the image data in row-major order.</param>
+        /// <param name="width">Width of the texture in pixels.</param>
+        /// <param name="height">Height of the texture in pixels.</param>
+        /// <returns>The texture identifier after registration.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="pixels" /> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException">If <paramref name="width" /> is zero or negative.</exception>
+        /// <exception cref="ArgumentException">If <paramref name="height" /> is zero or negative.</exception>
+        public int RegisterTexture(Span<Color> pixels, int width, int height)
+        {
+            return Renderer.RegisterTexture(pixels, width, height);
+        }
+
+        #endregion
+
         #region Set Texture and Matrix
 
         /// <summary>
@@ -294,7 +313,7 @@ namespace OpenWheels.Rendering
         public void SetTexture(int texture)
         {
             var size = Renderer.GetTextureSize(texture);
-            Sprite = new Sprite(texture, new Rectangle(0, 0, size.X, size.Y));
+            Sprite = new Sprite(texture, new Rectangle(0, 0, size.Width, size.Height));
         }
 
         /// <summary>
@@ -700,12 +719,13 @@ namespace OpenWheels.Rendering
             HorizontalAlignment ha = HorizontalAlignment.Left, VerticalAlignment va = VerticalAlignment.Top,
             float wrappingWidth = -1f, float tabWidth = 4)
         {
-            if (Font == null)
+            if (TextureFont == null)
                 throw new InvalidOperationException("No font is set.");
 
-            var slFont = Font.GlyphMap.Font;
-            // TODO there is no setter for Font on RendererOptions, once there is we can cache an instance
+            var slFont = TextureFont.GlyphMap.Font;
+            // TODO other dpi support
             var dpi = 72 * scale;
+            // TODO there is no setter for Font on RendererOptions, once there is we can cache an instance
             var ro = new RendererOptions(slFont, dpi, dpi, position);
             ro.HorizontalAlignment = ha;
             ro.VerticalAlignment = va;
@@ -717,15 +737,15 @@ namespace OpenWheels.Rendering
 
             foreach (var gm in gms)
             {
-                var gd = Font.GlyphMap.GetGlyphData(gm.Codepoint);
+                var gd = TextureFont.GlyphMap.GetGlyphData(gm.Codepoint);
                 if (gd.Character == 0)
                 {
-                    if (Font.FallbackCharacter.HasValue)
+                    if (TextureFont.FallbackCharacter.HasValue)
                         throw new Exception($"Character '{gm.Character}' is missing from the glyph map of active font and no fallback character is set.");
-                    gd = Font.FallbackGlyphData;
+                    gd = TextureFont.FallbackGlyphData;
                 }
 
-                Sprite = new Sprite(Font.Texture, gd.Bounds);
+                Sprite = new Sprite(TextureFont.Texture, gd.Bounds);
                 FillRect(gm.Bounds.ToOwRect(), color);
             }
         }

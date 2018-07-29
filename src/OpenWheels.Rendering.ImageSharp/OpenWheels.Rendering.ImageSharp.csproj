@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard1.1;netstandard1.3</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>Load fonts and textures for OpenWheels from path or stream with ImageSharp.</Description>
+    <PackageTags>2D Graphics Rendering</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SixLabors.ImageSharp" Version="$(ImageSharpVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenWheels\OpenWheels.csproj" />
+    <ProjectReference Include="..\OpenWheels.Rendering\OpenWheels.Rendering.csproj" />
+    <ProjectReference Include="..\OpenWheels.Fonts\OpenWheels.Fonts.csproj" />
+    <ProjectReference Include="..\OpenWheels.Fonts.ImageSharp\OpenWheels.Fonts.ImageSharp.csproj" />
+  </ItemGroup>
+</Project>
