@@ -12,6 +12,6 @@
     <ProjectReference Include="..\OpenWheels.Fonts\OpenWheels.Fonts.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="1.0.0-beta0004" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="1.0.0-dev001714" />
   </ItemGroup>
 </Project>
