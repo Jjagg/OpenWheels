@@ -34,6 +34,7 @@ namespace OpenWheels.Rendering
     /// <p>
     ///   All 2D drawing operations generate vertices in the XY-plane. They can be remapped to
     ///   the desired plane (if necessary) by using the <see cref="TransformMatrix"/>.
+    ///   Unless the order is implied by the method, indices are generated so vertices are in a clockwise order.
     /// </p>
     /// </summary>
     // TODO: Maybe add support for having multiple buffers so we can sort draw operations in them by graphics state
@@ -346,17 +347,9 @@ namespace OpenWheels.Rendering
         /// <param name="color">Color of the line.</param>
         /// <param name="lineWidth">Stroke width of the line.</param>
         /// <param name="uvRect">Uv rectangle inside the sprite to source. Probably not very useful for user code.</param>
-        public void DrawLine(Vector2 p1, Vector2 p2, Color color, float lineWidth = 1, RectangleF? uvRect = null)
+        public void DrawLine(Vector2 p1, Vector2 p2, Color color, float lineWidth = 1, in RectangleF? uvRect = null)
         {
-            var d = Vector2.Normalize(p2 - p1);
-            var dt = new Vector2(-d.Y, d.X) * (lineWidth / 2f);
-
-            var ur = uvRect ?? RectangleF.Unit;
-
-            var v1 = CreateVertex(p1 - dt, ur.TopLeft, color);
-            var v2 = CreateVertex(p1 + dt, ur.TopRight, color);
-            var v3 = CreateVertex(p2 + dt, ur.BottomRight, color);
-            var v4 = CreateVertex(p2 - dt, ur.BottomLeft, color);
+            CreateLine(p1, p2, color, lineWidth, uvRect ?? RectangleF.Unit, out var v1, out var v2, out var v3, out var v4);
             FillQuad(v1, v2, v3, v4);
         }
 
@@ -366,25 +359,63 @@ namespace OpenWheels.Rendering
         /// <param name="points">The points on the line strip.</param>
         /// <param name="color">Color of the line strip.</param>
         /// <param name="lineWidth">Stroke width.</param>
-        /// <param name="maxCount">When specified only this amount of points are drawn.</param>
-        /// <exception cref="Exception">
-        ///   If <paramref name="points"/> has less than 2 points or <paramref name="maxCount"/> is less than 2.
-        /// </exception>
-        public void DrawLineStrip(IEnumerable<Vector2> points, Color color, float lineWidth = 1, int? maxCount = null)
+        /// <exception cref="Exception">If <paramref name="points"/> has less than 2 points.</exception>
+        public void DrawLineStrip(Span<Vector2> points, Color color, float lineWidth = 1)
         {
-            var c = maxCount ?? points.Count();
+
+            var c = points.Length;
             if (c < 2)
                 throw new Exception("Need at least 2 vertices for a line strip.");
 
             var vertexCount = c * 4;
-            var indexCount = c * 6;
+            var indexCount = c * 6 + (c - 1) * 3;
             EnsureFree(vertexCount, indexCount);
 
-            var p1 = points.First();
-            foreach (var p2 in points.Skip(1).Take(c - 1))
+            void FillQuad(in Vertex ve1, in Vertex ve2, in Vertex ve3, in Vertex ve4, out int i1, out int i2, out int i3, out int i4)
             {
+                i1 = AddVertex(ve1);
+                i2 = AddVertex(ve2);
+                i3 = AddVertex(ve3);
+                i4 = AddVertex(ve4);
+                AddIndex(i1);
+                AddIndex(i2);
+                AddIndex(i4);
+                AddIndex(i4);
+                AddIndex(i2);
+                AddIndex(i3);
+            }
+
+            var p1 = points[0];
+            var p2 = points[1];
+            var d1 = p2 - p1;
+            CreateLine(p1, p2, color, lineWidth, RectangleF.Unit, out var v1, out var v2, out var v3, out var v4);
+            FillQuad(v1, v2, v3, v4, out _, out _, out var i3prev, out var i4prev);
+
+            p1 = p2;
+
+            for (var i = 2; i < points.Length; i++)
+            {
+                p2 = points[i];
+
+                CreateLine(p1, p2, color, lineWidth, RectangleF.Unit, out v1, out v2, out v3, out v4);
+                FillQuad(v1, v2, v3, v4, out var i1, out var i2, out var i3, out var i4);
+
+                // draw a triangle between the lines to nicely connect them
+                var d2 = p2 - p1;
+                var cross = MathHelper.Cross2D(d1, d2);
+                AddIndex(i4prev);
+                AddIndex(i3prev);
+                if (cross > 0) // right-hand turn
+                    AddIndex(i2);
+                else if (cross < 0) // left-hand turn
+                    AddIndex(i1);
+
                 DrawLine(p1, p2, color, lineWidth);
+
                 p1 = p2;
+                d1 = d2;
+                i3prev = i3;
+                i4prev = i4;
             }
         }
 
@@ -401,7 +432,11 @@ namespace OpenWheels.Rendering
         /// <param name="c">Color of the triangle.</param>
         public void FillTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color c)
         {
-            FillTriangleStrip(Extensions.Yield(v1, v2, v3).Select(v => CreateVertex(v, Vector2.Zero, c)));
+            Span<Vertex> triangle = stackalloc Vertex[3];
+            triangle[0] = CreateVertex(v1, Vector2.Zero, c);
+            triangle[1] = CreateVertex(v2, Vector2.Zero, c);
+            triangle[2] = CreateVertex(v3, Vector2.Zero, c);
+            FillTriangleStrip(triangle);
         }
 
         #endregion
@@ -499,13 +534,13 @@ namespace OpenWheels.Rendering
         }
 
         /// <summary>
-        /// Fill a quad.
+        /// Fill a quad. Assumes vertices are passed in clockwise order.
         /// </summary>
         /// <param name="v0">The first vertex.</param>
         /// <param name="v1">The second vertex.</param>
         /// <param name="v2">The third vertex.</param>
         /// <param name="v3">The fourth vertex.</param>
-        public void FillQuad(Vertex v0, Vertex v1, Vertex v2, Vertex v3)
+        public void FillQuad(in Vertex v0, in Vertex v1, in Vertex v2, in Vertex v3)
         {
             EnsureFree(4, 6);
 
@@ -639,8 +674,9 @@ namespace OpenWheels.Rendering
         /// <param name="lineWidth">Stroke width of the outline.</param>
         public void DrawCircleSegment(Vector2 center, float radius, float start, float end, Color color, int sides, float lineWidth = 1)
         {
-            var ps = CreateCircleSegment(center, radius, sides, start, end);
-            DrawLineStrip(ps, color, lineWidth, sides + 1);
+            Span<Vector2> points = stackalloc Vector2[sides + 1];
+            CreateCircleSegment(center, radius, sides, start, end, ref points);
+            DrawLineStrip(points, color, lineWidth);
         }
 
         /// <summary>
@@ -674,25 +710,31 @@ namespace OpenWheels.Rendering
         /// </param>
         public void FillCircleSegment(Vector2 center, float radius, float start, float end, Color color, int sides, RectangleF? uvRect = null)
         {
-            var ps = CreateCircleSegment(center, radius, sides, start, end);
+            Span<Vector2> points = stackalloc Vector2[sides + 1];
+            CreateCircleSegment(center, radius, sides, start, end, ref points);
             var fromRect = RectangleF.FromHalfExtents(center, new Vector2(radius));
             var toRect = uvRect ?? RectangleF.Unit;
-            var vs = ps.Select(p => CreateVertex(p, MathHelper.LinearMap(p, fromRect, toRect), color));
+
+            Span<Vertex> vs = stackalloc Vertex[points.Length];
+            for (var i = 0; i < points.Length; i++)
+                vs[i] = CreateVertex(points[i], MathHelper.LinearMap(points[i], fromRect, toRect), color);
+
             var vCenter = CreateVertex(center, MathHelper.LinearMap(center, fromRect, toRect), color);
             FillTriangleFan(vCenter, vs);
         }
 
-        private static IEnumerable<Vector2> CreateCircleSegment(Vector2 center, float radius, int sides, float start, float end)
+        private static void CreateCircleSegment(Vector2 center, float radius, int sides, float start, float end, ref Span<Vector2> result)
         {
             var step = (end - start) / sides;
             var theta = start;
 
             for (var i = 0; i < sides; i++)
             {
-                yield return new Vector2((float) (center.X + radius * Math.Cos(theta)), (float) (center.Y + radius * Math.Sin(theta)));
+                result[i] = new Vector2((float) (center.X + radius * Math.Cos(theta)), (float) (center.Y + radius * Math.Sin(theta)));
                 theta += step;
             }
-            yield return center + new Vector2((float) (radius * Math.Cos(end)), (float) (radius * Math.Sin(end)));
+
+            result[sides] = center + new Vector2((float) (radius * Math.Cos(end)), (float) (radius * Math.Sin(end)));
         }
 
         #endregion
@@ -758,13 +800,10 @@ namespace OpenWheels.Rendering
         /// Fill a triangle strip.
         /// </summary>
         /// <param name="ps">Vertices of the triangle strip.</param>
-        /// <param name="maxCount">When specified only this amount of points are drawn.</param>
-        /// <exception cref="Exception">
-        ///   If less than 3 vertices are passed or <paramref name="maxCount"/> is less than 3.
-        /// </exception>
-        public void FillTriangleStrip(IEnumerable<Vertex> ps, int? maxCount = null)
+        /// <exception cref="Exception">If less than 3 vertices are passed.</exception>
+        public void FillTriangleStrip(Span<Vertex> ps)
         {
-            var c = maxCount ?? ps.Count();
+            var c = ps.Length;
             if (c < 3)
                 throw new Exception("Need at least 3 vertices for a triangle strip.");
 
@@ -772,22 +811,17 @@ namespace OpenWheels.Rendering
             var indexCount = (c - 2) * 3;
             EnsureFree(vertexCount, indexCount);
 
-            using (var en = ps.Take(c).GetEnumerator())
-            {
-                en.MoveNext();
-                var v1 = AddVertex(en.Current);
-                en.MoveNext();
-                var v2 = AddVertex(en.Current);
+            var v1 = AddVertex(ps[0]);
+            var v2 = AddVertex(ps[1]);
 
-                while (en.MoveNext())
-                {
-                    var v3 = AddVertex(en.Current);
-                    AddIndex(v1);
-                    AddIndex(v2);
-                    AddIndex(v3);
-                    v1 = v2;
-                    v2 = v3;
-                }
+            for (var i = 2; i < c; i++)
+            {
+                var v3 = AddVertex(ps[i]);
+                AddIndex(v1);
+                AddIndex(v2);
+                AddIndex(v3);
+                v1 = v2;
+                v2 = v3;
             }
         }
 
@@ -796,13 +830,10 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="center">The center vertex.</param>
         /// <param name="vs">The other vertices.</param>
-        /// <param name="maxCount">When specified only this amount of points are drawn.</param>
-        /// <exception cref="Exception">
-        ///   If <paramref name="vs"/> has less than 2 vertices or <paramref name="maxCount"/> is less than 2.
-        /// </exception>
-        public void FillTriangleFan(Vertex center, IEnumerable<Vertex> vs, int? maxCount = null)
+        /// <exception cref="Exception">If <paramref name="vs"/> has less than 2 vertices.</exception>
+        public void FillTriangleFan(Vertex center, Span<Vertex> vs)
         {
-            var c = maxCount ?? vs.Count();
+            var c = vs.Length;;
             if (c < 2)
                 throw new Exception("Need at least 3 vertices for a triangle fan.");
 
@@ -810,20 +841,15 @@ namespace OpenWheels.Rendering
             var indexCount = (c - 1) * 3;
             EnsureFree(vertexCount, indexCount);
 
-            using (var en = vs.GetEnumerator())
+            var centerIndex = AddVertex(center);
+            var v1 = AddVertex(vs[0]);
+            for (var i = 1; i < c; i++)
             {
-                en.MoveNext();
-                var centerIndex = AddVertex(center);
-                var v0 = AddVertex(en.Current);
-                var v1 = v0;
-                while (en.MoveNext())
-                {
-                    var v2 = AddVertex(en.Current);
-                    AddIndex(centerIndex);
-                    AddIndex(v1);
-                    AddIndex(v2);
-                    v1 = v2;
-                }
+                var v2 = AddVertex(vs[i]);
+                AddIndex(centerIndex);
+                AddIndex(v1);
+                AddIndex(v2);
+                v1 = v2;
             }
         }
 
@@ -890,6 +916,8 @@ namespace OpenWheels.Rendering
 
         #endregion
 
+        #region Helper methods
+
         /// <summary>
         /// Ensure that the vertex and index buffers have at least the specified amount of free spots.
         /// Grows the vertex and index buffer if necessary.
@@ -952,5 +980,18 @@ namespace OpenWheels.Rendering
         {
             return new GraphicsState(Sprite.Texture, BlendState, SamplerState, ScissorRect);
         }
+
+        private void CreateLine(Vector2 p1, Vector2 p2, Color color, float lineWidth, in RectangleF ur, out Vertex v1, out Vertex v2, out Vertex v3, out Vertex v4)
+        {
+            var d = Vector2.Normalize(p2 - p1);
+            var dt = new Vector2(-d.Y, d.X) * (lineWidth / 2f);
+
+            v1 = CreateVertex(p1 + dt, ur.TopLeft, color);
+            v2 = CreateVertex(p1 - dt, ur.TopRight, color);
+            v3 = CreateVertex(p2 - dt, ur.BottomRight, color);
+            v4 = CreateVertex(p2 + dt, ur.BottomLeft, color);
+        }
+
+        #endregion
     }
 }

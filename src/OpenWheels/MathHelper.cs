@@ -90,7 +90,7 @@ namespace OpenWheels
         /// Performs component-wise linear interpolation. <seealso cref="Lerp(float,float,float)"/>
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Lerp(Vector2 a, Vector2 b, Vector2 v)
+        public static Vector2 Lerp(in Vector2 a, in Vector2 b, in Vector2 v)
         {
             return new Vector2(Lerp(a.X, b.X, v.X), Lerp(a.Y, b.Y, v.Y));
         }
@@ -99,11 +99,21 @@ namespace OpenWheels
         /// Performs component-wise inverted linear interpolation. <seealso cref="InvLerp(Vector2, Vector2, Vector2)"/>
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 InvLerp(Vector2 a, Vector2 b, Vector2 v)
+        public static Vector2 InvLerp(in Vector2 a, in Vector2 b, in Vector2 v)
         {
             return new Vector2(InvLerp(a.X, b.X, v.X), InvLerp(a.Y, b.Y, v.Y));
         }
-        
+
+        /// <summary>
+        /// Compute the so called 2D cross product. Computed as <c>a.X * b.Y - b.X * a.Y</c>.
+        /// </summary>
+        /// <param name="a">The first vector.</param>
+        /// <param name="b">The second vector.</param>
+        public static float Cross2D(in Vector2 a, in Vector2 b)
+        {
+            return a.X * b.Y - b.X * a.Y;
+        }
+
         /// <summary>
         /// Linearly map a value from one range to another.
         /// Equivalent to <code>Lerp(aTo, bTo, InvLerp(aFrom, bFrom, value))</code>.
@@ -118,7 +128,7 @@ namespace OpenWheels
         /// <summary>
         /// Performs component-wise linear mapping. <seealso cref="LinearMap(float,float,float,float,float)"/>
         /// </summary>
-        public static Vector2 LinearMap(Vector2 value, RectangleF from, RectangleF to)
+        public static Vector2 LinearMap(in Vector2 value, in RectangleF from, in RectangleF to)
         {
             var normalized = (value.X - from.Left) / from.Width;
             var normalized1 = (value.Y - from.Top) / from.Height;
@@ -130,7 +140,7 @@ namespace OpenWheels
         /// <summary>
         /// Performs component-wise linear mapping on all 4 points of the rectangle. <seealso cref="LinearMap(float,float,float,float,float)"/>
         /// </summary>
-        public static RectangleF LinearMap(RectangleF value, RectangleF from, RectangleF to)
+        public static RectangleF LinearMap(in RectangleF value, in RectangleF from, in RectangleF to)
         {
             return RectangleF.FromExtremes(
                 LinearMap(value.TopLeft, from, to),
