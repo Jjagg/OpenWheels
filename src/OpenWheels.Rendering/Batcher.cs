@@ -359,13 +359,13 @@ namespace OpenWheels.Rendering
         /// <param name="points">The points on the line strip.</param>
         /// <param name="color">Color of the line strip.</param>
         /// <param name="lineWidth">Stroke width.</param>
-        /// <exception cref="Exception">If <paramref name="points"/> has less than 2 points.</exception>
+        /// <exception cref="ArgumentException">If <paramref name="points"/> has less than 2 points.</exception>
         public void DrawLineStrip(Span<Vector2> points, Color color, float lineWidth = 1)
         {
 
             var c = points.Length;
             if (c < 2)
-                throw new Exception("Need at least 2 vertices for a line strip.");
+                throw new ArgumentException("Need at least 2 vertices for a line strip.", nameof(points));
 
             var vertexCount = c * 4;
             var indexCount = c * 6 + (c - 1) * 3;
@@ -467,12 +467,15 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="rectangle">The outer bounds of the rectangle.</param>
         /// <param name="radius">Radius of the corners.</param>
-        /// <param name="segments">Number of segments for triangulation of the corners.</param>
         /// <param name="color">Color of the outline.</param>
         /// <param name="lineWidth">Stroke width.</param>
-        public void DrawRoundedRect(RectangleF rectangle, float radius, int segments, Color color, int lineWidth = 1)
+        /// <param name="maxError">
+        ///   The maximum distance from any point on the drawn circle to the actual circle.
+        ///   The number of segments to draw is calculated from this value.
+        /// </param>
+        public void DrawRoundedRect(RectangleF rectangle, float radius, Color color, int lineWidth = 1, float maxError = .25f)
         {
-            DrawRoundedRect(rectangle, radius, segments, radius, segments, radius, segments, radius, segments, color, lineWidth);
+            DrawRoundedRect(rectangle, radius, radius, radius, radius, color, lineWidth);
         }
 
         /// <summary>
@@ -480,31 +483,29 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="rectangle">The outer bounds of the rectangle.</param>
         /// <param name="radiusTl">Radius of the top left corner.</param>
-        /// <param name="segmentsTl">Number of segments for triangulation for the top left corner.</param>
         /// <param name="radiusTr">Radius of the top right corner.</param>
-        /// <param name="segmentsTr">Number of segments for triangulation for the top right corner.</param>
         /// <param name="radiusBr">Radius of the bottom right corner.</param>
-        /// <param name="segmentsBr">Number of segments for triangulation for the bottom right corner.</param>
         /// <param name="radiusBl">Radius of the bottom left corner.</param>
-        /// <param name="segmentsBl">Number of segments for triangulation for the bottom left corner.</param>
         /// <param name="color">Color of the outline.</param>
         /// <param name="lineWidth">Stroke width.</param>
-        /// <exception cref="Exception">
+        /// <param name="maxError">
+        ///   The maximum distance from any point on the drawn circle to the actual circle.
+        ///   The number of segments to draw is calculated from this value.
+        /// </param>
+        /// <exception cref="ArgumentException">
         ///   If any of the radii is larger than half the width or height of the rectangle.
         /// </exception>
         public void DrawRoundedRect(RectangleF rectangle,
-            float radiusTl, int segmentsTl,
-            float radiusTr, int segmentsTr,
-            float radiusBr, int segmentsBr,
-            float radiusBl, int segmentsBl,
-            Color color, int lineWidth = 1)
+            float radiusTl, float radiusTr, float radiusBr, float radiusBl,
+            Color color, int lineWidth = 1, float maxError = .25f)
         {
             if (radiusTl > rectangle.Width / 2f || radiusTl > rectangle.Height / 2f ||
                 radiusTr > rectangle.Width / 2f || radiusTr > rectangle.Height / 2f ||
                 radiusBr > rectangle.Width / 2f || radiusBr > rectangle.Height / 2f ||
                 radiusBl > rectangle.Width / 2f || radiusBl > rectangle.Height / 2f)
-                throw new Exception($"Radius too large. The rectangle size is ({rectangle.Size.X}, {rectangle.Size.Y}), " +
-                                    $"radii of the corners are (TL: {radiusTl}, TR: {radiusTr}, BR: {radiusBr}, Bl: {radiusBl}).");
+                throw new ArgumentException(
+                    $"Radius too large. The rectangle size is ({rectangle.Size.X}, {rectangle.Size.Y}), " +
+                    $"radii of the corners are (TL: {radiusTl}, TR: {radiusTr}, BR: {radiusBr}, Bl: {radiusBl}).");
 
             if (radiusTl == 0 && radiusTr == 0 && radiusBr == 0 && radiusBl == 0)
             {
@@ -524,13 +525,13 @@ namespace OpenWheels.Rendering
             DrawLine(new Vector2(br.X, outerRect.Bottom), new Vector2(bl.X, outerRect.Bottom), color, lineWidth);
             DrawLine(new Vector2(outerRect.Left, bl.Y), new Vector2(outerRect.Left, tr.Y), color, lineWidth);
             if (radiusTl > 0)
-                DrawCircleSegment(tl, radiusTl, LeftAngle, TopAngle, color, segmentsTl, lineWidth);
+                DrawCircleSegment(tl, radiusTl, LeftAngle, TopAngle, color, lineWidth, maxError);
             if (radiusTr > 0)
-                DrawCircleSegment(tr, radiusTr, TopAngle, RightEndAngle, color, segmentsTr, lineWidth);
+                DrawCircleSegment(tr, radiusTr, TopAngle, RightEndAngle, color, lineWidth, maxError);
             if (radiusBr > 0)
-                DrawCircleSegment(br, radiusBr, RightStartAngle, BotAngle, color, segmentsBr, lineWidth);
+                DrawCircleSegment(br, radiusBr, RightStartAngle, BotAngle, color, lineWidth, maxError);
             if (radiusBl > 0)
-                DrawCircleSegment(bl, radiusBl, BotAngle, LeftAngle, color, segmentsBl, lineWidth);
+                DrawCircleSegment(bl, radiusBl, BotAngle, LeftAngle, color, lineWidth, maxError);
         }
 
         /// <summary>
@@ -592,14 +593,17 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="rectangle">Outer bounds of the rectangle.</param>
         /// <param name="radius">Radius of the corners.</param>
-        /// <param name="segments">Number of segments to triangulate the corners.</param>
         /// <param name="color">Color to fill with.</param>
+        /// <param name="maxError">
+        ///   The maximum distance from any point on the drawn circle to the actual circle.
+        ///   The number of segments to draw is calculated from this value.
+        /// </param>
         /// <param name="uvRect">Uv rectangle inside the sprite to source. Probably not very useful for user code.</param>
-        /// <exception cref="Exception">If the radius is larger than half the width or height of the rectangle.</exception>
-        public void FillRoundedRect(RectangleF rectangle, float radius, int segments, Color color, RectangleF? uvRect = null)
+        /// <exception cref="ArgumentException">If the radius is larger than half the width or height of the rectangle.</exception>
+        public void FillRoundedRect(RectangleF rectangle, float radius, Color color, float maxError = .25f, RectangleF? uvRect = null)
         {
             if (radius > rectangle.Width / 2f || radius > rectangle.Height / 2f)
-                throw new Exception($"Radius too large. The rectangle size is ({rectangle.Size.X}, {rectangle.Size.Y}), the radius is {radius}.");
+                throw new ArgumentException($"Radius too large. The rectangle size is ({rectangle.Size.X}, {rectangle.Size.Y}), the radius is {radius}.", nameof(radius));
 
             if (radius == 0)
             {
@@ -633,10 +637,10 @@ namespace OpenWheels.Rendering
             var trRect = RectangleF.FromHalfExtents(tr, radiusVec);
             var brRect = RectangleF.FromHalfExtents(br, radiusVec);
             var blRect = RectangleF.FromHalfExtents(bl, radiusVec);
-            FillCircleSegment(tl, radius, LeftAngle,       TopAngle,      color, segments, MathHelper.LinearMap(tlRect, outerRect, ur));
-            FillCircleSegment(tr, radius, TopAngle,        RightEndAngle, color, segments, MathHelper.LinearMap(trRect, outerRect, ur));
-            FillCircleSegment(br, radius, RightStartAngle, BotAngle,      color, segments, MathHelper.LinearMap(brRect, outerRect, ur));
-            FillCircleSegment(bl, radius, BotAngle,        LeftAngle,     color, segments, MathHelper.LinearMap(blRect, outerRect, ur));
+            FillCircleSegment(tl, radius, LeftAngle,       TopAngle,      color, maxError, MathHelper.LinearMap(tlRect, outerRect, ur));
+            FillCircleSegment(tr, radius, TopAngle,        RightEndAngle, color, maxError, MathHelper.LinearMap(trRect, outerRect, ur));
+            FillCircleSegment(br, radius, RightStartAngle, BotAngle,      color, maxError, MathHelper.LinearMap(brRect, outerRect, ur));
+            FillCircleSegment(bl, radius, BotAngle,        LeftAngle,     color, maxError, MathHelper.LinearMap(blRect, outerRect, ur));
         }
 
         #endregion
@@ -655,11 +659,14 @@ namespace OpenWheels.Rendering
         /// <param name="center">Center of the circle.</param>
         /// <param name="radius">Radius of the circle.</param>
         /// <param name="color">Color of the circle.</param>
-        /// <param name="sides">Number of sides to the circle for triangulation.</param>
         /// <param name="lineWidth">Stroke width of the outline.</param>
-        public void DrawCircle(Vector2 center, float radius, Color color, int sides, float lineWidth = 1)
+        /// <param name="maxError">
+        ///   The maximum distance from any point on the drawn circle to the actual circle.
+        ///   The number of segments to draw is calculated from this value.
+        /// </param>
+        public void DrawCircle(Vector2 center, float radius, Color color, float lineWidth = 1, float maxError = .25f)
         {
-            DrawCircleSegment(center, radius, RightStartAngle, RightEndAngle, color, sides, lineWidth);
+            DrawCircleSegment(center, radius, RightStartAngle, RightEndAngle, color, lineWidth, maxError);
         }
 
         /// <summary>
@@ -670,12 +677,17 @@ namespace OpenWheels.Rendering
         /// <param name="start">Start angle of the segment in radians. Angle of 0 is right (positive x-axis).</param>
         /// <param name="end">End angle of the segment in radians.</param>
         /// <param name="color">Color of the circle segment.</param>
-        /// <param name="sides">Number of sides to the circle for triangulation.</param>
         /// <param name="lineWidth">Stroke width of the outline.</param>
-        public void DrawCircleSegment(Vector2 center, float radius, float start, float end, Color color, int sides, float lineWidth = 1)
+        /// <param name="maxError">
+        ///   The maximum distance from any point on the drawn circle to the actual circle.
+        ///   The number of segments to draw is calculated from this value.
+        /// </param>
+        public void DrawCircleSegment(Vector2 center, float radius, float start, float end, Color color, float lineWidth = 1, float maxError = .25f)
         {
-            Span<Vector2> points = stackalloc Vector2[sides + 1];
-            CreateCircleSegment(center, radius, sides, start, end, ref points);
+            ComputeSegments(radius, maxError, out var step, out var segments);
+
+            Span<Vector2> points = stackalloc Vector2[segments + 1];
+            CreateCircleSegment(center, radius, step, start, end, ref points);
             DrawLineStrip(points, color, lineWidth);
         }
 
@@ -685,14 +697,17 @@ namespace OpenWheels.Rendering
         /// <param name="center">Center of the circle.</param>
         /// <param name="radius">Radius of the circle.</param>
         /// <param name="color">Color of the circle.</param>
-        /// <param name="sides">Number of sides to the circle for triangulation.</param>
+        /// <param name="maxError">
+        ///   The maximum distance from any point on the drawn circle to the actual circle.
+        ///   The number of segments to draw is calculated from this value.
+        /// </param>
         /// <param name="uvRect">
         ///   The rectangle inside the sprite to source uv coordinates from.
         ///   Probably not very useful for user code.
         /// </param>
-        public void FillCircle(Vector2 center, float radius, Color color, int sides, RectangleF? uvRect = null)
+        public void FillCircle(Vector2 center, float radius, Color color, float maxError = .25f, RectangleF? uvRect = null)
         {
-            FillCircleSegment(center, radius, RightStartAngle, RightEndAngle, color, sides, uvRect);
+            FillCircleSegment(center, radius, RightStartAngle, RightEndAngle, color, maxError, uvRect);
         }
 
         /// <summary>
@@ -703,15 +718,20 @@ namespace OpenWheels.Rendering
         /// <param name="start">Start angle of the segment in radians. Angle of 0 is right (positive x-axis).</param>
         /// <param name="end">End angle of the segment in radians.</param>
         /// <param name="color">Color of the circle segment.</param>
-        /// <param name="sides">Number of sides to the circle for triangulation.</param>
+        /// <param name="maxError">
+        ///   The maximum distance from any point on the drawn circle to the actual circle.
+        ///   The number of segments to draw is calculated from this value.
+        /// </param>
         /// <param name="uvRect">
         ///   The rectangle inside the sprite to source uv coordinates from.
         ///   Probably not very useful for user code.
         /// </param>
-        public void FillCircleSegment(Vector2 center, float radius, float start, float end, Color color, int sides, RectangleF? uvRect = null)
+        public void FillCircleSegment(Vector2 center, float radius, float start, float end, Color color, float maxError, RectangleF? uvRect = null)
         {
-            Span<Vector2> points = stackalloc Vector2[sides + 1];
-            CreateCircleSegment(center, radius, sides, start, end, ref points);
+            ComputeSegments(radius, maxError, out var step, out var segments);
+
+            Span<Vector2> points = stackalloc Vector2[segments + 1];
+            CreateCircleSegment(center, radius, step, start, end, ref points);
             var fromRect = RectangleF.FromHalfExtents(center, new Vector2(radius));
             var toRect = uvRect ?? RectangleF.Unit;
 
@@ -723,18 +743,15 @@ namespace OpenWheels.Rendering
             FillTriangleFan(vCenter, vs);
         }
 
-        private static void CreateCircleSegment(Vector2 center, float radius, int sides, float start, float end, ref Span<Vector2> result)
+        private static void CreateCircleSegment(Vector2 center, float radius, float step, float start, float end, ref Span<Vector2> result)
         {
-            var step = (end - start) / sides;
-            var theta = start;
+            var i = 0;
+            float theta;
+            for (theta = start; theta < end; theta += step)
+                result[i++] = new Vector2((float) (center.X + radius * Math.Cos(theta)), (float) (center.Y + radius * Math.Sin(theta)));
 
-            for (var i = 0; i < sides; i++)
-            {
-                result[i] = new Vector2((float) (center.X + radius * Math.Cos(theta)), (float) (center.Y + radius * Math.Sin(theta)));
-                theta += step;
-            }
-
-            result[sides] = center + new Vector2((float) (radius * Math.Cos(end)), (float) (radius * Math.Sin(end)));
+            if (theta != end)
+                result[i] = center + new Vector2((float) (radius * Math.Cos(end)), (float) (radius * Math.Sin(end)));
         }
 
         #endregion
@@ -752,7 +769,8 @@ namespace OpenWheels.Rendering
         /// <param name="va">Vertical alignment of the text.</param>
         /// <param name="wrappingWidth">Width to wrap the text at. Pass -1 to not wrap (default).</param>
         /// <param name="tabWidth">Number of spaces in a tab.</param>
-        /// <exception cref="Exception">
+        /// <exception cref="InvalidOperationException">If <see cref="TextureFont"/> is not set.</exception>
+        /// <exception cref="InvalidOperationException">
         ///   If a character from the given text has no glyph registered in the
         ///   active font and no fallback character is set.
         /// </exception>
@@ -783,7 +801,7 @@ namespace OpenWheels.Rendering
                 if (gd.Character == 0)
                 {
                     if (TextureFont.FallbackCharacter.HasValue)
-                        throw new Exception($"Character '{gm.Character}' is missing from the glyph map of active font and no fallback character is set.");
+                        throw new InvalidOperationException($"Character '{gm.Character}' is missing from the glyph map of active font and no fallback character is set.");
                     gd = TextureFont.FallbackGlyphData;
                 }
 
@@ -800,12 +818,12 @@ namespace OpenWheels.Rendering
         /// Fill a triangle strip.
         /// </summary>
         /// <param name="ps">Vertices of the triangle strip.</param>
-        /// <exception cref="Exception">If less than 3 vertices are passed.</exception>
+        /// <exception cref="ArgumentException">If less than 3 vertices are passed.</exception>
         public void FillTriangleStrip(Span<Vertex> ps)
         {
             var c = ps.Length;
             if (c < 3)
-                throw new Exception("Need at least 3 vertices for a triangle strip.");
+                throw new ArgumentException("Need at least 3 vertices for a triangle strip.", nameof(ps));
 
             var vertexCount = c;
             var indexCount = (c - 2) * 3;
@@ -830,12 +848,12 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="center">The center vertex.</param>
         /// <param name="vs">The other vertices.</param>
-        /// <exception cref="Exception">If <paramref name="vs"/> has less than 2 vertices.</exception>
+        /// <exception cref="ArgumentException">If <paramref name="vs"/> has less than 2 vertices.</exception>
         public void FillTriangleFan(Vertex center, Span<Vertex> vs)
         {
-            var c = vs.Length;;
+            var c = vs.Length;
             if (c < 2)
-                throw new Exception("Need at least 3 vertices for a triangle fan.");
+                throw new ArgumentException("Need at least 3 vertices for a triangle fan.", nameof(vs));
 
             var vertexCount = c + 1;
             var indexCount = (c - 1) * 3;
@@ -990,6 +1008,13 @@ namespace OpenWheels.Rendering
             v2 = CreateVertex(p1 - dt, ur.TopRight, color);
             v3 = CreateVertex(p2 - dt, ur.BottomRight, color);
             v4 = CreateVertex(p2 + dt, ur.BottomLeft, color);
+        }
+
+        private void ComputeSegments(float radius, float maxError, out float step, out int segments)
+        {
+            var invErrRad = 1 - maxError / radius;
+            step = (float) Math.Acos(2 * invErrRad * invErrRad - 1);
+            segments = (int) Math.Ceiling(MathHelper.TwoPi / step);
         }
 
         #endregion
