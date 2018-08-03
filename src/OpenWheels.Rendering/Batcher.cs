@@ -740,7 +740,7 @@ namespace OpenWheels.Rendering
         /// </param>
         public void DrawCircleSegment(Vector2 center, float radius, float start, float end, Color color, float lineWidth = 1, float maxError = .25f)
         {
-            ComputeCircleSegments(radius, maxError, out var step, out var segments);
+            ComputeCircleSegments(radius, maxError, end - start, out var step, out var segments);
 
             Span<Vector2> points = stackalloc Vector2[segments + 1];
             CreateCircleSegment(center, radius, step, start, end, ref points);
@@ -784,7 +784,7 @@ namespace OpenWheels.Rendering
         /// </param>
         public void FillCircleSegment(Vector2 center, float radius, float start, float end, Color color, float maxError, RectangleF? uvRect = null)
         {
-            ComputeCircleSegments(radius, maxError, out var step, out var segments);
+            ComputeCircleSegments(radius, maxError, end - start, out var step, out var segments);
 
             Span<Vector2> points = stackalloc Vector2[segments + 1];
             CreateCircleSegment(center, radius, step, start, end, ref points);
@@ -1066,11 +1066,11 @@ namespace OpenWheels.Rendering
             v4 = CreateVertex(p2 + dt, ur.BottomLeft, color);
         }
 
-        private void ComputeCircleSegments(float radius, float maxError, out float step, out int segments)
+        private void ComputeCircleSegments(float radius, float maxError, float range, out float step, out int segments)
         {
             var invErrRad = 1 - maxError / radius;
             step = (float) Math.Acos(2 * invErrRad * invErrRad - 1);
-            segments = (int) (MathHelper.TwoPi / step + 0.999f);
+            segments = (int) (range / step + 0.999f);
         }
 
         #endregion
