@@ -73,7 +73,7 @@ namespace OpenWheels
         /// <summary>
         /// Get an upper bound for the lenght of this curve by summing the lengths of the lines between subsequent control points.
         /// </summary>
-        public float LengthMax()
+        public float MaxLength()
         {
             return (B - A).Length() + (C - B).Length() + (C - D).Length();
         }

@@ -419,6 +419,62 @@ namespace OpenWheels.Rendering
             }
         }
 
+        /// <summary>
+        /// Draw a quadratic Bézier curve.
+        /// </summary>
+        /// <param name="qb">The Bézier curve to draw.</param>
+        /// <param name="color">Color of the curve.</param>
+        /// <param name="lineWidth">Stroke width.</param>
+        /// <param name="segmentsPerLength">Number of line segments to subdivide the curve in per unit of length.</param>
+        public void DrawCurve(QuadraticBezier qb, Color color, float lineWidth = 1, float segmentsPerLength = .05f)
+        {
+            var lengthMax = qb.MaxLength();
+            var segments = (int) (lengthMax * segmentsPerLength + .999f);
+            Span<Vector2> ps = stackalloc Vector2[segments + 1];
+
+            ps[0] = qb.A;
+
+            var step = 1f / segments;
+
+            for (var i = 1; i < segments; i++)
+            {
+                var t = i * step;
+                ps[i] = qb.Evaluate(t);
+            }
+
+            ps[segments] = qb.C;
+
+            DrawLineStrip(ps, color, lineWidth);
+        }
+
+        /// <summary>
+        /// Draw a cubic Bézier curve.
+        /// </summary>
+        /// <param name="qb">The Bézier curve to draw.</param>
+        /// <param name="color">Color of the curve.</param>
+        /// <param name="lineWidth">Stroke width.</param>
+        /// <param name="segmentsPerLength">Number of line segments to subdivide the curve in per unit of length.</param>
+        public void DrawCurve(CubicBezier qb, Color color, float lineWidth = 1, float segmentsPerLength = .1f)
+        {
+            var lengthMax = qb.MaxLength();
+            var segments = (int) (lengthMax * segmentsPerLength + .999f);
+            Span<Vector2> ps = stackalloc Vector2[segments + 1];
+
+            ps[0] = qb.A;
+
+            var step = 1f / segments;
+
+            for (var i = 1; i < segments; i++)
+            {
+                var t = i * step;
+                ps[i] = qb.Evaluate(t);
+            }
+
+            ps[segments] = qb.D;
+
+            DrawLineStrip(ps, color, lineWidth);
+        }
+
         #endregion
 
         #region Triangle
@@ -684,7 +740,7 @@ namespace OpenWheels.Rendering
         /// </param>
         public void DrawCircleSegment(Vector2 center, float radius, float start, float end, Color color, float lineWidth = 1, float maxError = .25f)
         {
-            ComputeSegments(radius, maxError, out var step, out var segments);
+            ComputeCircleSegments(radius, maxError, out var step, out var segments);
 
             Span<Vector2> points = stackalloc Vector2[segments + 1];
             CreateCircleSegment(center, radius, step, start, end, ref points);
@@ -728,7 +784,7 @@ namespace OpenWheels.Rendering
         /// </param>
         public void FillCircleSegment(Vector2 center, float radius, float start, float end, Color color, float maxError, RectangleF? uvRect = null)
         {
-            ComputeSegments(radius, maxError, out var step, out var segments);
+            ComputeCircleSegments(radius, maxError, out var step, out var segments);
 
             Span<Vector2> points = stackalloc Vector2[segments + 1];
             CreateCircleSegment(center, radius, step, start, end, ref points);
@@ -1010,11 +1066,11 @@ namespace OpenWheels.Rendering
             v4 = CreateVertex(p2 + dt, ur.BottomLeft, color);
         }
 
-        private void ComputeSegments(float radius, float maxError, out float step, out int segments)
+        private void ComputeCircleSegments(float radius, float maxError, out float step, out int segments)
         {
             var invErrRad = 1 - maxError / radius;
             step = (float) Math.Acos(2 * invErrRad * invErrRad - 1);
-            segments = (int) Math.Ceiling(MathHelper.TwoPi / step);
+            segments = (int) (MathHelper.TwoPi / step + 0.999f);
         }
 
         #endregion
