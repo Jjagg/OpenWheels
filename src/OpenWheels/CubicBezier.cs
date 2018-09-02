@@ -55,7 +55,7 @@ namespace OpenWheels
             var invT = 1 - t;
             var invT2 = invT * invT;
             var t2 = t * t;
-            return invT * invT2 * A + 2 * invT2 * t * B + 3 * invT * t2 * C + t2 * t * D;
+            return invT * invT2 * A + 3 * invT2 * t * B + 3 * invT * t2 * C + t2 * t * D;
         }
 
         /// <summary>
