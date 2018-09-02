@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Text;
 using SixLabors.Fonts;
 
 namespace OpenWheels.Rendering
@@ -20,7 +17,7 @@ namespace OpenWheels.Rendering
     ///   or the scissor rectangle. The Batcher API is stateful. All graphics state is set in between draw calls.
     ///   You can change the graphics state by setting the properties <see cref="BlendState"/> and
     ///   <see cref="SamplerState"/>. You can set the texture by calling <see cref="SetTexture(int)"/> or
-    ///   <see cref="SetSprite(int,Rectangle)"/>. <seealso cref="Sprite"/>
+    ///   <see cref="SetSprite"/>. <seealso cref="Sprite"/>
     ///   Note that setting a sprite from the same texture will not finish a batch, since this just requires
     ///   to compute UV coordinates differently.
     /// </p>
@@ -33,8 +30,10 @@ namespace OpenWheels.Rendering
     /// </p>
     /// <p>
     ///   All 2D drawing operations generate vertices in the XY-plane. They can be remapped to
-    ///   the desired plane (if necessary) by using the <see cref="TransformMatrix"/>.
+    ///   the desired plane (if necessary) by using the <see cref="PositionTransform"/>.
     ///   Unless the order is implied by the method, indices are generated so vertices are in a clockwise order.
+    ///   Most rendering functions assign UV coordinates to the vertices. These can be manipulated similar to the
+    ///   vertex position using <see cref="UvTransform"/>.
     /// </p>
     /// </summary>
     // TODO: Maybe add support for having multiple buffers so we can sort draw operations in them by graphics state
@@ -129,19 +128,39 @@ namespace OpenWheels.Rendering
         private BlendState _blendState;
         private SamplerState _samplerState;
         private Rectangle _scissorRect;
-        private Matrix4x4 _transformMatrix;
-        private bool _useMatrix;
+        private Matrix3x2 _positionTransform;
+        private Matrix3x2 _uvTransform;
+        private bool _usePosMatrix;
+        private bool _useUvMatrix;
+
+        /// <summary>
+        /// Get or set the z coordinate used for all vertices.
+        /// </summary>
+        public float PositionZ { get; set; }
 
         /// <summary>
         /// Get or set the transformation matrix to apply to vertex positions.
         /// </summary>
-        public Matrix4x4 TransformMatrix
+        public Matrix3x2 PositionTransform
         {
-            get => _transformMatrix;
+            get => _positionTransform;
             set
             {
-                _transformMatrix = value;
-                _useMatrix = _transformMatrix != Matrix4x4.Identity;
+                _positionTransform = value;
+                _usePosMatrix = _positionTransform != Matrix3x2.Identity;
+            }
+        }
+
+        /// <summary>
+        /// Get or set the transformation matrix to apply to vertex UV coordinates.
+        /// </summary>
+        public Matrix3x2 UvTransform
+        {
+            get => _uvTransform;
+            set
+            {
+                _uvTransform = value;
+                _useUvMatrix = _uvTransform != Matrix3x2.Identity;
             }
         }
 
@@ -274,7 +293,7 @@ namespace OpenWheels.Rendering
 
             _batches = new List<BatchInfo>();
 
-            TransformMatrix = Matrix4x4.Identity;
+            PositionTransform = Matrix3x2.Identity;
         }
 
         #region Register Texture
@@ -299,12 +318,32 @@ namespace OpenWheels.Rendering
         #region Set Texture and Matrix
 
         /// <summary>
-        /// Set <see cref="TransformMatrix"/> so the renderer draws to the plane of the viewport of the renderer.
+        /// Set <see cref="PositionTransform"/> so vertex coordinates are mapped from viewport pixel space to
+        /// the [-1, 1] range.
         /// </summary>
         public void SetMatrix2D()
         {
+            SetMatrix2D(Vector2.Zero);
+        }
+
+        /// <summary>
+        /// Set <see cref="PositionTransform"/> so vertex coordinates are mapped from viewport pixel space
+        /// with some offset to the [-1, 1] range.
+        /// </summary>
+        /// <param name="origin">
+        ///   Coordinates in the viewport that map to [-1, -1] in pixels.
+        ///   Defaults to <see cref="Vector2.Zero"/>.
+        /// </param>
+        public void SetMatrix2D(Vector2 origin)
+        {
             var vp = Renderer.GetViewport();
-            TransformMatrix = Matrix4x4.CreateOrthographicOffCenter(0, vp.Width, vp.Height, 0, 0, 1);
+            var mat = new Matrix3x2();
+            mat.M11 = 2f / vp.Width;
+            mat.M22 = 2f / vp.Height;
+            mat.M31 = -2 * (vp.X + origin.X) / vp.Width + 1;
+            mat.M32 = -2 * (vp.Y + origin.Y) / vp.Height + 1;
+
+            PositionTransform = mat;
         }
 
         /// <summary>
@@ -330,7 +369,7 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="texture">Texture identifier.</param>
         /// <param name="srcRect">Source rectangle of the sprite inside the texture.</param>
-        public void SetSprite(int texture, Rectangle srcRect)
+        public void SetSprite(int texture, in Rectangle srcRect)
         {
             Sprite = new Sprite(texture, srcRect);
         }
@@ -346,10 +385,22 @@ namespace OpenWheels.Rendering
         /// <param name="p2">Second point of the line.</param>
         /// <param name="color">Color of the line.</param>
         /// <param name="lineWidth">Stroke width of the line.</param>
-        /// <param name="uvRect">Uv rectangle inside the sprite to source. Probably not very useful for user code.</param>
-        public void DrawLine(Vector2 p1, Vector2 p2, Color color, float lineWidth = 1, in RectangleF? uvRect = null)
+        public void DrawLine(Vector2 p1, Vector2 p2, Color color, float lineWidth = 1)
         {
-            CreateLine(p1, p2, color, lineWidth, uvRect ?? RectangleF.Unit, out var v1, out var v2, out var v3, out var v4);
+            DrawLine(p1, p2, color, lineWidth, RectangleF.Unit);
+        }
+
+        /// <summary>
+        /// Draw a line.
+        /// </summary>
+        /// <param name="p1">First point of the line.</param>
+        /// <param name="p2">Second point of the line.</param>
+        /// <param name="color">Color of the line.</param>
+        /// <param name="lineWidth">Stroke width of the line.</param>
+        /// <param name="uvRect">Uv rectangle inside the sprite to source.</param>
+        private void DrawLine(Vector2 p1, Vector2 p2, Color color, float lineWidth, in RectangleF uvRect)
+        {
+            CreateLine(p1, p2, color, lineWidth, uvRect, out var v1, out var v2, out var v3, out var v4);
             FillQuad(v1, v2, v3, v4);
         }
 
@@ -551,9 +602,7 @@ namespace OpenWheels.Rendering
         /// <exception cref="ArgumentException">
         ///   If any of the radii is larger than half the width or height of the rectangle.
         /// </exception>
-        public void DrawRoundedRect(RectangleF rectangle,
-            float radiusTl, float radiusTr, float radiusBr, float radiusBl,
-            Color color, int lineWidth = 1, float maxError = .25f)
+        public void DrawRoundedRect(RectangleF rectangle, float radiusTl, float radiusTr, float radiusBr, float radiusBl, Color color, int lineWidth = 1, float maxError = .25f)
         {
             if (radiusTl > rectangle.Width / 2f || radiusTl > rectangle.Height / 2f ||
                 radiusTr > rectangle.Width / 2f || radiusTr > rectangle.Height / 2f ||
@@ -569,17 +618,15 @@ namespace OpenWheels.Rendering
                 return;
             }
 
-            var outerRect = rectangle;
+            var tl = new Vector2(rectangle.Left + radiusTl, rectangle.Top + radiusTl);
+            var tr = new Vector2(rectangle.Right - radiusTr, rectangle.Top + radiusTr);
+            var bl = new Vector2(rectangle.Left + radiusBl, rectangle.Bottom - radiusBl);
+            var br = new Vector2(rectangle.Right - radiusBr, rectangle.Bottom - radiusBr);
 
-            var tl = new Vector2(outerRect.Left + radiusTl, outerRect.Top + radiusTl);
-            var tr = new Vector2(outerRect.Right - radiusTr, outerRect.Top + radiusTr);
-            var bl = new Vector2(outerRect.Left + radiusBl, outerRect.Bottom - radiusBl);
-            var br = new Vector2(outerRect.Right - radiusBr, outerRect.Bottom - radiusBr);
-
-            DrawLine(new Vector2(tl.X, outerRect.Top), new Vector2(tr.X, outerRect.Top), color, lineWidth);
-            DrawLine(new Vector2(outerRect.Right, tr.Y), new Vector2(outerRect.Right, br.Y), color, lineWidth);
-            DrawLine(new Vector2(br.X, outerRect.Bottom), new Vector2(bl.X, outerRect.Bottom), color, lineWidth);
-            DrawLine(new Vector2(outerRect.Left, bl.Y), new Vector2(outerRect.Left, tr.Y), color, lineWidth);
+            DrawLine(new Vector2(tl.X, rectangle.Top), new Vector2(tr.X, rectangle.Top), color, lineWidth);
+            DrawLine(new Vector2(rectangle.Right, tr.Y), new Vector2(rectangle.Right, br.Y), color, lineWidth);
+            DrawLine(new Vector2(br.X, rectangle.Bottom), new Vector2(bl.X, rectangle.Bottom), color, lineWidth);
+            DrawLine(new Vector2(rectangle.Left, bl.Y), new Vector2(rectangle.Left, tr.Y), color, lineWidth);
             if (radiusTl > 0)
                 DrawCircleSegment(tl, radiusTl, LeftAngle, TopAngle, color, lineWidth, maxError);
             if (radiusTr > 0)
@@ -618,8 +665,18 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="rect">Bounds of the rectangle.</param>
         /// <param name="c">Color of the rectangle.</param>
-        /// <param name="uvRect">Uv rectangle inside the sprite to source. Probably not very useful for user code.</param>
-        public void FillRect(RectangleF rect, Color c, RectangleF? uvRect = null)
+        public void FillRect(in RectangleF rect, Color c)
+        {
+            FillRect(rect, c, RectangleF.Unit);
+        }
+
+        /// <summary>
+        /// Fill a rectangle.
+        /// </summary>
+        /// <param name="rect">Bounds of the rectangle.</param>
+        /// <param name="c">Color of the rectangle.</param>
+        /// <param name="uvRect">Uv rectangle inside the sprite to source</param>
+        private void FillRect(in RectangleF rect, Color c, in RectangleF uvRect)
         {
             FillRect(rect, c, c, c, c, uvRect);
         }
@@ -632,10 +689,23 @@ namespace OpenWheels.Rendering
         /// <param name="c2">Color of the top right corner.</param>
         /// <param name="c3">Color of the bottom right corner.</param>
         /// <param name="c4">Color of the bottom left corner.</param>
-        /// <param name="uvRect">Uv rectangle inside the sprite to source. Probably not very useful for user code.</param>
-        public void FillRect(RectangleF rect, Color c1, Color c2, Color c3, Color c4, RectangleF? uvRect = null)
+        public void FillRect(in RectangleF rect, Color c1, Color c2, Color c3, Color c4)
         {
-            var r = uvRect ?? RectangleF.Unit;
+            FillRect(rect, c1, c2, c3, c4, RectangleF.Unit);
+        }
+
+        /// <summary>
+        /// Fill a rectangle. Interpolates colors between the corners.
+        /// </summary>
+        /// <param name="rect">Bounds of the rectangle.</param>
+        /// <param name="c1">Color of the top left corner.</param>
+        /// <param name="c2">Color of the top right corner.</param>
+        /// <param name="c3">Color of the bottom right corner.</param>
+        /// <param name="c4">Color of the bottom left corner.</param>
+        /// <param name="uvRect">Uv rectangle inside the sprite to source.</param>
+        private void FillRect(in RectangleF rect, Color c1, Color c2, Color c3, Color c4, in RectangleF uvRect)
+        {
+            var r = uvRect;
             var v1 = CreateVertex(rect.TopLeft,     r.TopLeft,     c1);
             var v2 = CreateVertex(rect.TopRight,    r.TopRight,    c2);
             var v3 = CreateVertex(rect.BottomRight, r.BottomRight, c3);
@@ -654,9 +724,8 @@ namespace OpenWheels.Rendering
         ///   The maximum distance from any point on the drawn circle to the actual circle.
         ///   The number of segments to draw is calculated from this value.
         /// </param>
-        /// <param name="uvRect">Uv rectangle inside the sprite to source. Probably not very useful for user code.</param>
         /// <exception cref="ArgumentException">If the radius is larger than half the width or height of the rectangle.</exception>
-        public void FillRoundedRect(RectangleF rectangle, float radius, Color color, float maxError = .25f, RectangleF? uvRect = null)
+        public void FillRoundedRect(RectangleF rectangle, float radius, Color color, float maxError = .25f)
         {
             if (radius > rectangle.Width / 2f || radius > rectangle.Height / 2f)
                 throw new ArgumentException($"Radius too large. The rectangle size is ({rectangle.Size.X}, {rectangle.Size.Y}), the radius is {radius}.", nameof(radius));
@@ -667,22 +736,21 @@ namespace OpenWheels.Rendering
                 return;
             }
 
-            var ur = uvRect ?? RectangleF.Unit;
             var outerRect = rectangle;
             var innerRect = rectangle;
             innerRect = innerRect.Inflate(-2 * radius, -2 * radius);
 
-            FillRect(innerRect, color, MathHelper.LinearMap(innerRect, outerRect, ur));
+            FillRect(innerRect, color, MathHelper.LinearMap(innerRect, outerRect, RectangleF.Unit));
 
             var leftRect = new RectangleF(outerRect.Left, innerRect.Top, radius, innerRect.Height);
             var rightRect = new RectangleF(innerRect.Right, innerRect.Top, radius, innerRect.Height);
             var topRect = new RectangleF(innerRect.Left, outerRect.Top, innerRect.Width, radius);
             var bottomRect = new RectangleF(innerRect.Left, innerRect.Bottom, innerRect.Width, radius);
 
-            FillRect(leftRect,   color, MathHelper.LinearMap(leftRect, outerRect, ur)); // left
-            FillRect(rightRect,  color, MathHelper.LinearMap(rightRect, outerRect, ur)); // right
-            FillRect(topRect,    color, MathHelper.LinearMap(topRect, outerRect, ur)); // top
-            FillRect(bottomRect, color, MathHelper.LinearMap(bottomRect, outerRect, ur)); // top
+            FillRect(leftRect,   color, MathHelper.LinearMap(leftRect, outerRect, RectangleF.Unit)); // left
+            FillRect(rightRect,  color, MathHelper.LinearMap(rightRect, outerRect, RectangleF.Unit)); // right
+            FillRect(topRect,    color, MathHelper.LinearMap(topRect, outerRect, RectangleF.Unit)); // top
+            FillRect(bottomRect, color, MathHelper.LinearMap(bottomRect, outerRect, RectangleF.Unit)); // top
 
             var tl = innerRect.TopLeft;
             var tr = innerRect.TopRight;
@@ -693,10 +761,10 @@ namespace OpenWheels.Rendering
             var trRect = RectangleF.FromHalfExtents(tr, radiusVec);
             var brRect = RectangleF.FromHalfExtents(br, radiusVec);
             var blRect = RectangleF.FromHalfExtents(bl, radiusVec);
-            FillCircleSegment(tl, radius, LeftAngle,       TopAngle,      color, maxError, MathHelper.LinearMap(tlRect, outerRect, ur));
-            FillCircleSegment(tr, radius, TopAngle,        RightEndAngle, color, maxError, MathHelper.LinearMap(trRect, outerRect, ur));
-            FillCircleSegment(br, radius, RightStartAngle, BotAngle,      color, maxError, MathHelper.LinearMap(brRect, outerRect, ur));
-            FillCircleSegment(bl, radius, BotAngle,        LeftAngle,     color, maxError, MathHelper.LinearMap(blRect, outerRect, ur));
+            FillCircleSegment(tl, radius, LeftAngle,       TopAngle,      color, maxError, MathHelper.LinearMap(tlRect, outerRect, RectangleF.Unit));
+            FillCircleSegment(tr, radius, TopAngle,        RightEndAngle, color, maxError, MathHelper.LinearMap(trRect, outerRect, RectangleF.Unit));
+            FillCircleSegment(br, radius, RightStartAngle, BotAngle,      color, maxError, MathHelper.LinearMap(brRect, outerRect, RectangleF.Unit));
+            FillCircleSegment(bl, radius, BotAngle,        LeftAngle,     color, maxError, MathHelper.LinearMap(blRect, outerRect, RectangleF.Unit));
         }
 
         #endregion
@@ -757,13 +825,9 @@ namespace OpenWheels.Rendering
         ///   The maximum distance from any point on the drawn circle to the actual circle.
         ///   The number of segments to draw is calculated from this value.
         /// </param>
-        /// <param name="uvRect">
-        ///   The rectangle inside the sprite to source uv coordinates from.
-        ///   Probably not very useful for user code.
-        /// </param>
-        public void FillCircle(Vector2 center, float radius, Color color, float maxError = .25f, RectangleF? uvRect = null)
+        public void FillCircle(Vector2 center, float radius, Color color, float maxError)
         {
-            FillCircleSegment(center, radius, RightStartAngle, RightEndAngle, color, maxError, uvRect);
+            FillCircleSegment(center, radius, RightStartAngle, RightEndAngle, color, maxError, RectangleF.Unit);
         }
 
         /// <summary>
@@ -778,24 +842,37 @@ namespace OpenWheels.Rendering
         ///   The maximum distance from any point on the drawn circle to the actual circle.
         ///   The number of segments to draw is calculated from this value.
         /// </param>
-        /// <param name="uvRect">
-        ///   The rectangle inside the sprite to source uv coordinates from.
-        ///   Probably not very useful for user code.
+        public void FillCircleSegment(Vector2 center, float radius, float start, float end, Color color, float maxError = .25f)
+        {
+            FillCircleSegment(center, radius, start, end, color, maxError, RectangleF.Unit);
+        }
+
+        /// <summary>
+        /// Fill a circle segment.
+        /// </summary>
+        /// <param name="center">Center of the circle.</param>
+        /// <param name="radius">Radius of the circle.</param>
+        /// <param name="start">Start angle of the segment in radians. Angle of 0 is right (positive x-axis).</param>
+        /// <param name="end">End angle of the segment in radians.</param>
+        /// <param name="color">Color of the circle segment.</param>
+        /// <param name="maxError">
+        ///   The maximum distance from any point on the drawn circle to the actual circle.
+        ///   The number of segments to draw is calculated from this value.
         /// </param>
-        public void FillCircleSegment(Vector2 center, float radius, float start, float end, Color color, float maxError, RectangleF? uvRect = null)
+        /// <param name="uvRect">The rectangle inside the sprite to source uv coordinates from.</param>
+        private void FillCircleSegment(Vector2 center, float radius, float start, float end, Color color, float maxError, RectangleF uvRect)
         {
             ComputeCircleSegments(radius, maxError, end - start, out var step, out var segments);
 
             Span<Vector2> points = stackalloc Vector2[segments + 1];
             CreateCircleSegment(center, radius, step, start, end, ref points);
             var fromRect = RectangleF.FromHalfExtents(center, new Vector2(radius));
-            var toRect = uvRect ?? RectangleF.Unit;
 
             Span<Vertex> vs = stackalloc Vertex[points.Length];
             for (var i = 0; i < points.Length; i++)
-                vs[i] = CreateVertex(points[i], MathHelper.LinearMap(points[i], fromRect, toRect), color);
+                vs[i] = CreateVertex(points[i], MathHelper.LinearMap(points[i], fromRect, uvRect), color);
 
-            var vCenter = CreateVertex(center, MathHelper.LinearMap(center, fromRect, toRect), color);
+            var vCenter = CreateVertex(center, MathHelper.LinearMap(center, fromRect, uvRect), color);
             FillTriangleFan(vCenter, vs);
         }
 
@@ -1009,9 +1086,17 @@ namespace OpenWheels.Rendering
                 Array.Resize(ref _ib, Math.Max(_ib.Length + MinIndexInc, _ib.Length + indexCount - ifree));
         }
 
-        private static Vertex CreateVertex(Vector2 p, Vector2 uv, Color c)
+        private Vertex CreateVertex(Vector2 p, Vector2 uv, Color c)
         {
-            return new Vertex(new Vector3(p.X, p.Y, 0), uv, c);
+            // remap uv from unit rectangle to the uv rectangle of our sprite
+            if (_useSpriteUv)
+                uv = MathHelper.LinearMap(uv, RectangleF.Unit, _spriteUv);
+            if (_useUvMatrix)
+                uv = Vector2.Transform(uv, _uvTransform);
+            if (_usePosMatrix)
+                p = Vector2.Transform(p, _positionTransform);
+
+            return new Vertex(new Vector3(p, PositionZ), uv, c);
         }
 
         private int AddVertex(Vector2 position, Color color)
@@ -1026,7 +1111,6 @@ namespace OpenWheels.Rendering
 
         private int AddVertex(Vertex v)
         {
-            TransformVertex(ref v);
             var i = VerticesSubmitted;
             _vb[i] = v;
             VerticesSubmitted++;
@@ -1038,16 +1122,6 @@ namespace OpenWheels.Rendering
             var i = _nextToDraw + _indicesInBatch;
             _ib[i] = index;
             _indicesInBatch++;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void TransformVertex(ref Vertex vertex)
-        {
-            // remap uv from unit rectangle to the uv rectangle of our sprite
-            if (_useSpriteUv)
-                vertex.Uv = MathHelper.LinearMap(vertex.Uv, RectangleF.Unit, _spriteUv);
-            if (_useMatrix)
-                vertex.Position = Vector3.Transform(vertex.Position, TransformMatrix);
         }
 
         private GraphicsState CreateCurrentGraphicsState()
