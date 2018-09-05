@@ -98,6 +98,36 @@ namespace OpenWheels
         }
 
         /// <summary>
+        /// Create a new color with the given r, g, b and a values.
+        /// R, g and b values should be in the range [0, 255], alpha should be in [0,1].
+        /// </summary>
+        /// <param name="r">Red channel value in range [0, 255].</param>
+        /// <param name="g">Green channel value in range [0, 255].</param>
+        /// <param name="b">Blue channel value in range [0, 255].</param>
+        /// <param name="a">Alpha channel value in range [0, 1].</param>
+        public Color(byte r, byte g, byte b, float a)
+        {
+            Packed = 0;
+            R = r;
+            G = g;
+            B = b;
+            A = (byte) MathHelper.Clamp(a * 255, 0, 255);
+        }
+
+        /// <summary>
+        /// Create a new color with the rgb values from the given color and a new alpha channel value.
+        /// Alpha should be in [0,1].
+        /// </summary>
+        /// <param name="rgb">Color to take the rgb values from.</param>
+        /// <param name="a">Alpha channel value in range [0, 1].</param>
+        public Color(Color rgb, float a)
+        {
+            R = G = B = 0;
+            Packed = rgb.Packed;
+            A = (byte) MathHelper.Clamp(a * 255, 0, 255);
+        }
+ 
+        /// <summary>
         /// Create a new color with the given packed value.
         /// The packed value is ordered ABGR with A at the most significant byte.
         /// </summary>
@@ -106,6 +136,16 @@ namespace OpenWheels
         {
             R = G = B = A = 0;
             Packed = packed;
+        }
+
+        /// <summary>
+        /// Create a color that matches the given RGBA hex value where R is the most significant byte.
+        /// Note that this is reversed from the packed value representation of this color.
+        /// </summary>
+        public static Color FromHex(uint rgba)
+        {
+            var packed = ((rgba & 0xff) << 24) | (((rgba >> 8) & 0xff) << 16) | (((rgba >> 16) & 0xff) << 8) | ((rgba >> 8) & 0xff); 
+            return new Color(packed);
         }
 
         /// <summary>
