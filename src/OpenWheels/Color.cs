@@ -142,9 +142,19 @@ namespace OpenWheels
         /// Create a color that matches the given RGBA hex value where R is the most significant byte.
         /// Note that this is reversed from the packed value representation of this color.
         /// </summary>
-        public static Color FromHex(uint rgba)
+        public static Color FromHexRgba(uint rgba)
         {
-            var packed = ((rgba & 0xff) << 24) | (((rgba >> 8) & 0xff) << 16) | (((rgba >> 16) & 0xff) << 8) | ((rgba >> 8) & 0xff); 
+            var packed = ((rgba & 0xff) << 24) | (((rgba >> 8) & 0xff) << 16) | (((rgba >> 16) & 0xff) << 8) | ((rgba >> 24) & 0xff); 
+            return new Color(packed);
+        }
+
+        /// <summary>
+        /// Create an opaque color that matches the given RGB hex value where R is the most significant byte.
+        /// Note that this is reversed from the packed value representation of this color.
+        /// </summary>
+        public static Color FromHexRgb(uint rgb)
+        {
+            var packed = 0xff000000 | ((rgb & 0xff) << 16) | (((rgb >> 8) & 0xff) << 8) | ((rgb >> 16) & 0xff); 
             return new Color(packed);
         }
 
