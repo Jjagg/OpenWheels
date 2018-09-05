@@ -3,17 +3,28 @@ using System.Collections.Generic;
 
 namespace OpenWheels
 {
-    public class ColorMap : IEnumerable<ColorPoint>
+    /// <summary>
+    /// A color gradient with multiple color points and linear interpolation in HSV colorspace between points.
+    /// </summary>
+    public class ColorGradient : IEnumerable<ColorPoint>
     {
         private readonly List<ColorPoint> _colorPoints;
         private static readonly Color ZeroColor = Color.Black;
 
-        public ColorMap()
+        /// <summary>
+        /// Create a new ColorGradient.
+        /// </summary>
+        public ColorGradient()
         {
             _colorPoints = new List<ColorPoint>();
         }
 
-        public ColorMap(Color zeroColor, Color oneColor)
+        /// <summary>
+        /// Create a new ColorGradient.
+        /// </summary>
+        /// <param name="zeroColor">The color at t = 0.</param>
+        /// <param name="oneColor">The color at t = 1.</param>
+        public ColorGradient(Color zeroColor, Color oneColor)
         {
             _colorPoints = new List<ColorPoint>
             {
@@ -22,12 +33,21 @@ namespace OpenWheels
             };
         }
 
+        /// <summary>
+        /// Add a color point at t = <paramref name="value" /> with the given color.
+        /// </summary>
+        /// <param name="value">Value of the stop point.</param>
+        /// <param name="value">Color of the stop point.</param>
         public void Add(float value, HsvColor color)
         {
             var cp = new ColorPoint(value, color);
             Add(cp);
         }
 
+        /// <summary>
+        /// Add a color point.
+        /// </summary>
+        /// <param name="cp">The color point.</param>
         public void Add(ColorPoint cp)
         {
             for (var i = 0; i < _colorPoints.Count; i++)
@@ -42,6 +62,10 @@ namespace OpenWheels
             _colorPoints.Add(cp);
         }
 
+        /// <summary>
+        /// Get the HSV color at the given value.
+        /// </summary>
+        /// <param name="value">Value to evaluate the gradient at.</param>
         public HsvColor MapHsv(float value)
         {
             if (_colorPoints.Count == 0)
@@ -69,17 +93,23 @@ namespace OpenWheels
             return HsvColor.Lerp(c1.Color, c2.Color, t);
         }
 
+        /// <summary>
+        /// Get the RGB color at the given value.
+        /// </summary>
+        /// <param name="value">Value to evaluate the gradient at.</param>
         public Color Map(float value)
         {
             return (Color) MapHsv(value);
         }
 
+        /// </inheritdoc>
         public IEnumerator<ColorPoint> GetEnumerator()
         {
             foreach (var cp in _colorPoints)
                 yield return cp;
         }
 
+        /// </inheritdoc>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
