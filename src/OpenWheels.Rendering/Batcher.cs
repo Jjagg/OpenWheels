@@ -825,7 +825,7 @@ namespace OpenWheels.Rendering
         ///   The maximum distance from any point on the drawn circle to the actual circle.
         ///   The number of segments to draw is calculated from this value.
         /// </param>
-        public void FillCircle(Vector2 center, float radius, Color color, float maxError)
+        public void FillCircle(Vector2 center, float radius, Color color, float maxError = .25f)
         {
             FillCircleSegment(center, radius, RightStartAngle, RightEndAngle, color, maxError, RectangleF.Unit);
         }
