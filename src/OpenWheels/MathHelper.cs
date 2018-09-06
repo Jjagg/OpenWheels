@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace OpenWheels
@@ -42,7 +43,7 @@ namespace OpenWheels
         ///   Clamp <paramref name="value"/> between <paramref name="min"/> and <paramref name="max"/>.
         /// </summary>
         /// <returns>
-        ///   <paramref name="min"/> if <code>value < min</code>, max if <code>value > max</code>,
+        ///   <paramref name="min"/> if <code>value &lt; min</code>, max if <code>value &gt; max</code>,
         ///   <paramref name="value"/> otherwise.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -55,13 +56,26 @@ namespace OpenWheels
         ///   Clamp <paramref name="value"/> between <paramref name="min"/> and <paramref name="max"/>.
         /// </summary>
         /// <returns>
-        ///   <paramref name="min"/> if <code>value < min</code>, max if <code>value > max</code>,
+        ///   <paramref name="min"/> if <code>value &lt; min</code>, max if <code>value &gt; max</code>,
         ///   <paramref name="value"/> otherwise.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Clamp(int value, int min, int max)
         {
             return value < min ? min : (value > max ? max : value);
+        }
+
+        /// <summary>
+        ///   Clamp <paramref name="value"/> between <paramref name="min"/> and <paramref name="max"/>.
+        /// </summary>
+        /// <returns>
+        ///   <paramref name="min"/> if <code>value < min</code>, max if <code>value > max</code>,
+        ///   <paramref name="value"/> otherwise.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Clamp<T>(T value, T min, T max) where T : IComparable<T>
+        {
+            return value.CompareTo(min) < 0 ? min : (value.CompareTo(max) > 0 ? max : min);
         }
 
         #region Mapping and Lerping
@@ -87,8 +101,9 @@ namespace OpenWheels
         }
 
         /// <summary>
-        /// Performs component-wise linear interpolation. <seealso cref="Lerp(float,float,float)"/>
+        /// Performs component-wise linear interpolation.
         /// </summary>
+        /// <seealso cref="Lerp(float,float,float)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Lerp(in Vector2 a, in Vector2 b, in Vector2 v)
         {
@@ -96,8 +111,10 @@ namespace OpenWheels
         }
 
         /// <summary>
-        /// Performs component-wise inverted linear interpolation. <seealso cref="InvLerp(Vector2, Vector2, Vector2)"/>
+        /// Performs component-wise inverted linear interpolation.
         /// </summary>
+        /// <seealso cref="Lerp(float,float,float)"/>
+        /// <seealso cref="InvLerp(float,float,float)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 InvLerp(in Vector2 a, in Vector2 b, in Vector2 v)
         {
