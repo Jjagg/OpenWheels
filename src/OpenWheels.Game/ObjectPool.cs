@@ -7,11 +7,23 @@ namespace OpenWheels.Game
     /// A simple non thread-safe object pool to reset and reuse objects instead of creating new ones.
     /// Used to avoid allocation and garbage collection of objects.
     /// </summary>
-    public class ObjectPool<T> where T : class
+    public class ObjectPool<T> where T : class, new()
     {
+        private static ObjectPool<T> _shared;
+
+        /// <summary>
+        /// Retrieve a shared <see cref="ObjectPool{T}"/> instance.
+        /// </summary>
+        public static ObjectPool<T> Shared => System.Threading.Volatile.Read(ref _shared) ?? EnsureShared();
+
+        private static ObjectPool<T> EnsureShared()
+        {
+            System.Threading.Interlocked.CompareExchange(ref _shared, new ObjectPool<T>(), null);
+            return _shared;
+        }
+
         private List<T> _objects;
         private int _capacity;
-        private Func<T> _create;
         private Action<T> _reset;
 
         /// <summary>
@@ -40,24 +52,19 @@ namespace OpenWheels.Game
         /// </summary>
         /// <param name="create">Function to create an object.</param>
         /// <param name="initial">The number of objects to initialize the pool with. Defaults to 0.</param>
-        public ObjectPool(Func<T> create, int initial = 0)
-            : this(create, null, initial)
+        public ObjectPool(int initial = 0)
+            : this(null, initial)
         {
         }
 
         /// <summary>
         /// Create a new object pool that can grow as necessary without a capacity limit.
         /// </summary>
-        /// <param name="create">Function to create an object.</param>
         /// <param name="reset">Function to reset an object when it's returned to the pool.</param>
         /// <param name="initial">The number of objects to initialize the pool with. Defaults to 0.</param>
-        public ObjectPool(Func<T> create, Action<T> reset, int initial = 0)
+        public ObjectPool(Action<T> reset, int initial = 0)
         {
-            if (create == null)
-                throw new ArgumentNullException(nameof(create));
-
             _capacity = int.MaxValue;
-            _create = create;
             _reset = reset;
             _objects = new List<T>();
 
@@ -79,7 +86,6 @@ namespace OpenWheels.Game
                 throw new ArgumentNullException(nameof(create));
 
             _capacity = capacity;
-            _create = create;
             _reset = reset;
             _objects = new List<T>(capacity);
 
@@ -90,7 +96,7 @@ namespace OpenWheels.Game
         private void EnsureAvailable(int amount)
         {
             while (_objects.Count < amount)
-                _objects.Add(_create());
+                _objects.Add(new T());
         }
 
         /// <summary>
@@ -102,7 +108,7 @@ namespace OpenWheels.Game
             if (_objects.Count == 0)
             {
                 ObjectCreated?.Invoke(this, EventArgs.Empty);
-                return _create();
+                return new T();
             }
             
             var i = _objects.Count - 1;

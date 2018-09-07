@@ -6,7 +6,8 @@ namespace OpenWheels.Game
     /// <summary>
     /// Manages different kinds of executable units that require updating in frequent time interval.
     /// ServiceRunner supports three kinds of services: <see cref="IUpdatable"/>, coroutines and timers.
-    /// When <see cref="Update"/> is called the services are updated.
+    /// When <see cref="Update"/> is called the services are updated. ServiceRunner uses object pooling to minimize
+    /// allocations. After stabilizing none of the methods exposed should generate any garbage.
     ///
     /// For registered <see cref="IUpdatable"/> implementations the <see cref="IUpdatable.Update"/> method is called.
     ///
@@ -17,6 +18,16 @@ namespace OpenWheels.Game
     /// For timers if they're canceled the canceled method is called (if any) and the timer is removed. If not
     /// canceled the delta time is added to the timer's elapsed time. If the elapsed time exceeds the timer duration
     /// the timer's finish method is invoked and the timer is removed.
+    ///
+    /// ServiceRunner also supports running tweens. This functionality internally uses a timer.
+    /// A tween is a smooth modification of a value over time from a starting value to an end value.
+    /// There are overloads that do not take a starting value, instead using the value of the lerped field at that time.
+    /// Some overloads also do not take a linear interpolation function, but instead generate one for the type of the
+    /// tweened field. The generated implementation depends on an Add(T,T), Subtract(T,T) and Multiply(float,T) operator
+    /// implementation. If any of the operators are missing the compilation of the generated Lerp function will fail.
+    /// The compiled Lerp function is cached. The tween functions get a
+    /// <see cref="OpenWheels.Game.Tween{TItem,TProperty}"/> instance from the shared <see cref="ObjectPool{T}"/> for
+    /// the tween type.
     /// </summary>
     public class ServiceRunner : IUpdatable
     {
@@ -27,6 +38,19 @@ namespace OpenWheels.Game
 
         private ObjectPool<Timer> _timerPool;
         private List<Timer> _timers;
+
+        private static ServiceRunner _default;
+
+        /// <summary>
+        /// Get a lazily initialized statically accessible instance of <see cref="ServiceRunner"/>.
+        /// </summary>
+        public static ServiceRunner Default => System.Threading.Volatile.Read(ref _default) ?? EnsureDefault();
+
+        private static ServiceRunner EnsureDefault()
+        {
+            System.Threading.Interlocked.CompareExchange(ref _default, new ServiceRunner(), null);
+            return _default;
+        }
 
         private class Coroutine<T>
         {
@@ -59,11 +83,13 @@ namespace OpenWheels.Game
         public ServiceRunner()
         {
             _updatables = new List<IUpdatable>();
-            _coroutinePool = new ObjectPool<Coroutine<TimeSpan>>(() => new Coroutine<TimeSpan>());
+            _coroutinePool = new ObjectPool<Coroutine<TimeSpan>>();
             _coroutines = new List<Coroutine<TimeSpan>>();
-            _timerPool = new ObjectPool<Timer>(() => new Timer());
+            _timerPool = new ObjectPool<Timer>();
             _timers = new List<Timer>();
         }
+
+        #region IUpdatable
 
         /// <summary>
         /// Register an <see cref="IUpdatable"/> to get updated when <see cref="Update"/> is called.
@@ -86,6 +112,10 @@ namespace OpenWheels.Game
         {
             _updatables.Remove(item);
         }
+
+        #endregion
+
+        #region Run Timer
 
         /// <summary>
         /// Run a coroutine. The yielded <see cref="TimeSpan"/> indicates the delay to the next call.
@@ -240,6 +270,205 @@ namespace OpenWheels.Game
             _timers.Add(tm);
         }
 
+        #endregion
+
+        #region Tween
+
+        /// <summary>
+        /// Tween a field of an object to a certain value. The current value is used as the start value.
+        /// </summary>
+        /// <remarks>
+        /// This overload dynamically generates and compiles a Lerp method for the type T using Add(T, T),
+        /// Subtract(T, T) and Mutliply(float, T) operators.
+        /// If the type of the field does not implement these operators this function call will fail.
+        /// You can add a custom Lerp function as an additional parameter to use another overload and bypass
+        /// the dynamic Lerp generation.
+        /// </remarks>
+        /// <param name="item">Object to tween a field from.</param>
+        /// <param name="selector">Selector that returns a ref to the field given the object.</param>
+        /// <param name="to">End value of the tween.</param>
+        /// <param name="seconds">Duration of the tween in seconds.</param>
+        /// <param name="easingFunction">Easing function to apply for the tween.</param>
+        /// <typeparam name="TItem">Type of the object.</typeparam>
+        /// <typeparam name="TProperty">Type of the field.</typeparam>
+        public void Tween<TItem, TProperty>(TItem item, GetRef<TItem, TProperty> selector, TProperty to, float seconds, Ease easingFunction)
+        {
+            Tween(item, selector, selector(item) ,to, TimeSpan.FromSeconds(seconds), easingFunction, LerpGen<TProperty>.Lerp);
+        }
+
+        /// <summary>
+        /// Tween a field of an object to a certain value.
+        /// </summary>
+        /// <remarks>
+        /// This overload dynamically generates and compiles a Lerp method for the type T using Add(T, T),
+        /// Subtract(T, T) and Mutliply(float, T) operators.
+        /// If the type of the field does not implement these operators this function call will fail.
+        /// You can add a custom Lerp function as an additional parameter to use another overload and bypass
+        /// the dynamic Lerp generation.
+        /// </remarks>
+        /// <param name="item">Object to tween a field from.</param>
+        /// <param name="selector">Selector that returns a ref to the field given the object.</param>
+        /// <param name="from">Start value of the tween.</param>
+        /// <param name="to">End value of the tween.</param>
+        /// <param name="seconds">Duration of the tween in seconds.</param>
+        /// <param name="easingFunction">Easing function to apply for the tween.</param>
+        /// <typeparam name="TItem">Type of the object.</typeparam>
+        /// <typeparam name="TProperty">Type of the field.</typeparam>
+        public void Tween<TItem, TProperty>(TItem item, GetRef<TItem, TProperty> selector, TProperty from, TProperty to, float seconds, Ease easingFunction)
+        {
+            Tween(item, selector, from, to, TimeSpan.FromSeconds(seconds), easingFunction, LerpGen<TProperty>.Lerp);
+        }
+
+        /// <summary>
+        /// Tween a field of an object to a certain value. The current value is used as the start value.
+        /// </summary>
+        /// <remarks>
+        /// This overload dynamically generates and compiles a Lerp method for the type T using Add(T, T),
+        /// Subtract(T, T) and Mutliply(float, T) operators.
+        /// If the type of the field does not implement these operators this function call will fail.
+        /// You can add a custom Lerp function as an additional parameter to use another overload and bypass
+        /// the dynamic Lerp generation.
+        /// </remarks>
+        /// <param name="item">Object to tween a field from.</param>
+        /// <param name="selector">Selector that returns a ref to the field given the object.</param>
+        /// <param name="to">End value of the tween.</param>
+        /// <param name="duration">Duration of the tween.</param>
+        /// <param name="easingFunction">Easing function to apply for the tween.</param>
+        /// <typeparam name="TItem">Type of the object.</typeparam>
+        /// <typeparam name="TProperty">Type of the field.</typeparam>
+        public void Tween<TItem, TProperty>(TItem item, GetRef<TItem, TProperty> selector, TProperty to, TimeSpan duration, Ease easingFunction)
+        {
+            Tween(item, selector, selector(item), to, duration, easingFunction, LerpGen<TProperty>.Lerp);
+        }
+
+        /// <summary>
+        /// Tween a field of an object to a certain value.
+        /// </summary>
+        /// <remarks>
+        /// This overload dynamically generates and compiles a Lerp method for the type T using Add(T, T),
+        /// Subtract(T, T) and Mutliply(float, T) operators.
+        /// If the type of the field does not implement these operators this function call will fail.
+        /// You can add a custom Lerp function as an additional parameter to use another overload and bypass
+        /// the dynamic Lerp generation.
+        /// </remarks>
+        /// <param name="item">Object to tween a field from.</param>
+        /// <param name="selector">Selector that returns a ref to the field given the object.</param>
+        /// <param name="from">Start value of the tween.</param>
+        /// <param name="to">End value of the tween.</param>
+        /// <param name="duration">Duration of the tween.</param>
+        /// <param name="easingFunction">Easing function to apply for the tween.</param>
+        /// <typeparam name="TItem">Type of the object.</typeparam>
+        /// <typeparam name="TProperty">Type of the field.</typeparam>
+        public void Tween<TItem, TProperty>(TItem item, GetRef<TItem, TProperty> selector, TProperty from, TProperty to, TimeSpan duration, Ease easingFunction)
+        {
+            Tween(item, selector, from, to, duration, easingFunction, LerpGen<TProperty>.Lerp);
+        }
+
+        /// <summary>
+        /// Tween a field of an object to a certain value. The current value is used as the start value.
+        /// </summary>
+        /// <param name="item">Object to tween a field from.</param>
+        /// <param name="selector">Selector that returns a ref to the field given the object.</param>
+        /// <param name="to">End value of the tween.</param>
+        /// <param name="seconds">Duration of the tween in seconds.</param>
+        /// <param name="easingFunction">Easing function to apply for the tween.</param>
+        /// <param name="lerp">Linear interpolation function to use.</param>
+        /// <typeparam name="TItem">Type of the object.</typeparam>
+        /// <typeparam name="TProperty">Type of the field.</typeparam>
+        public void Tween<TItem, TProperty>(TItem item, GetRef<TItem, TProperty> selector, TProperty to, float seconds, Ease easingFunction, Lerp<TProperty> lerp)
+        {
+            Tween(item, selector, selector(item), to, TimeSpan.FromSeconds(seconds), easingFunction, lerp);
+        }
+
+        /// <summary>
+        /// Tween a field of an object to a certain value.
+        /// </summary>
+        /// <remarks>
+        /// This overload dynamically generates and compiles a Lerp method for the type T using Add(T, T),
+        /// Subtract(T, T) and Mutliply(float, T) operators.
+        /// If the type of the field does not implement these operators this function call will fail.
+        /// You can add a custom Lerp function as an additional parameter to use another overload and bypass
+        /// the dynamic Lerp generation.
+        /// </remarks>
+        /// <param name="item">Object to tween a field from.</param>
+        /// <param name="selector">Selector that returns a ref to the field given the object.</param>
+        /// <param name="from">Start value of the tween.</param>
+        /// <param name="to">End value of the tween.</param>
+        /// <param name="seconds">Duration of the tween in seconds.</param>
+        /// <param name="easingFunction">Easing function to apply for the tween.</param>
+        /// <param name="lerp">Linear interpolation function to use.</param>
+        /// <typeparam name="TItem">Type of the object.</typeparam>
+        /// <typeparam name="TProperty">Type of the field.</typeparam>
+        public void Tween<TItem, TProperty>(TItem item, GetRef<TItem, TProperty> selector, TProperty from, TProperty to, float seconds, Ease easingFunction, Lerp<TProperty> lerp)
+        {
+            Tween(item, selector, from, to, TimeSpan.FromSeconds(seconds), easingFunction, lerp);
+        }
+
+        /// <summary>
+        /// Tween a field of an object to a certain value. The current value is used as the start value.
+        /// </summary>
+        /// <remarks>
+        /// This overload dynamically generates and compiles a Lerp method for the type T using Add(T, T),
+        /// Subtract(T, T) and Mutliply(float, T) operators.
+        /// If the type of the field does not implement these operators this function call will fail.
+        /// You can add a custom Lerp function as an additional parameter to use another overload and bypass
+        /// the dynamic Lerp generation.
+        /// </remarks>
+        /// <param name="item">Object to tween a field from.</param>
+        /// <param name="selector">Selector that returns a ref to the field given the object.</param>
+        /// <param name="to">End value of the tween.</param>
+        /// <param name="duration">Duration of the tween.</param>
+        /// <param name="easingFunction">Easing function to apply for the tween.</param>
+        /// <param name="lerp">Linear interpolation function to use.</param>
+        /// <typeparam name="TItem">Type of the object.</typeparam>
+        /// <typeparam name="TProperty">Type of the field.</typeparam>
+        public void Tween<TItem, TProperty>(TItem item, GetRef<TItem, TProperty> selector, TProperty to, TimeSpan duration, Ease easingFunction, Lerp<TProperty> lerp)
+        {
+            Tween(item, selector, selector(item), to, duration, easingFunction, lerp);
+        }
+
+        /// <summary>
+        /// Tween a field of an object to a certain value.
+        /// </summary>
+        /// <param name="item">Object to tween a field from.</param>
+        /// <param name="selector">Selector that returns a ref to the field given the object.</param>
+        /// <param name="from">Start value of the tween.</param>
+        /// <param name="to">End value of the tween.</param>
+        /// <param name="duration">Duration of the tween.</param>
+        /// <param name="easingFunction">Easing function to apply for the tween.</param>
+        /// <param name="lerp">Linear interpolation function to use.</param>
+        /// <typeparam name="TItem">Type of the object.</typeparam>
+        /// <typeparam name="TProperty">Type of the field.</typeparam>
+        public void Tween<TItem, TProperty>(TItem item, GetRef<TItem, TProperty> selector, TProperty from, TProperty to, TimeSpan duration, Ease easingFunction, Lerp<TProperty> lerp)
+        {
+            var tween = ObjectPool<Tween<TItem, TProperty>>.Shared.Get();
+            tween.Item = item;
+            tween.Selector = selector;
+            tween.Lerp = lerp;
+            tween.From = from;
+            tween.To = to;
+            tween.EasingFunction = easingFunction;
+            Tween(tween, duration);
+        }
+
+        /// <summary>
+        /// Perform a <see cref="Tween"/> over a given <see cref="TimeSpan"/>.
+        /// </summary>
+        /// <param name="tween">Tween to perform.</param>
+        /// <param name="duration">Duration of the tween.</param>
+        public void Tween(Tween tween, TimeSpan duration)
+        {
+            Run(duration, (in TimerData td) => UpdateTween(td), tween);
+        }
+
+        private static void UpdateTween(in TimerData td)
+        {
+            var tween = (Tween) td.Context;
+            tween.Apply(td.Progress);
+        }
+
+        #endregion
+
         /// <summary>
         /// Update all registered <see cref="IUpdatable"/> implementations, all coroutines and all timers.
         /// </summary>
@@ -274,7 +503,6 @@ namespace OpenWheels.Game
                 }
                 else
                 {
-                    c.Enumerator.Dispose();
                     _coroutines.RemoveAt(i);
                 }
             }
