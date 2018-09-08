@@ -3,9 +3,9 @@ using System;
 namespace OpenWheels.Game
 {
     /// <summary>
-    /// A value type holding the information passed to the update and cancel methods of a Timer.
+    /// Holds the information passed to the update, finish and cancel methods of a Timer.
     /// </summary>
-    public struct TimerData
+    public class TimerData
     {
         /// <summary>
         /// Duration of the timer.
@@ -21,11 +21,6 @@ namespace OpenWheels.Game
         /// Delta time of the last update.
         /// </summary>
         public TimeSpan Delta { get; set; }
-
-        /// <summary>
-        /// Context passed to timer creation to avoid closure allocation.
-        /// </summary>
-        public object Context { get; set; }
 
         /// <summary>
         /// Get or set if the timer is canceled. 
@@ -45,15 +40,10 @@ namespace OpenWheels.Game
         public bool Done => Elapsed >= Duration;
 
         /// <summary>
-        /// Create a new timer context with the given duration.
+        /// Create a new timer context.
         /// </summary>
-        /// <param name="duration">Duration of the timer.</param>
-        /// <param name="context">Context passed to timer creation to avoid closure allocation.</param>
-        public TimerData(TimeSpan duration, object context)
+        public TimerData()
         {
-            Duration = duration;
-            Context = context;
-            Canceled = false;
         }
     }
 }

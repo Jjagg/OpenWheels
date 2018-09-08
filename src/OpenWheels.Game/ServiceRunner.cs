@@ -25,18 +25,15 @@ namespace OpenWheels.Game
     /// Some overloads also do not take a linear interpolation function, but instead generate one for the type of the
     /// tweened field. The generated implementation depends on an Add(T,T), Subtract(T,T) and Multiply(float,T) operator
     /// implementation. If any of the operators are missing the compilation of the generated Lerp function will fail.
-    /// The compiled Lerp function is cached. The tween functions get a
-    /// <see cref="OpenWheels.Game.Tween{TItem,TProperty}"/> instance from the shared <see cref="ObjectPool{T}"/> for
-    /// the tween type.
+    /// The compiled Lerp function is cached.
+    ///
+    /// All class instances needed by the service runner are retrieved from their respective shared <see cref="ObjectPool{T}"/>.false
     /// </summary>
+    /// <seealso cref="ObjectPool{T}.Shared"/>
     public class ServiceRunner : IUpdatable
     {
         private List<IUpdatable> _updatables;
-
-        private ObjectPool<Coroutine<TimeSpan>> _coroutinePool;
         private List<Coroutine<TimeSpan>> _coroutines;
-
-        private ObjectPool<Timer> _timerPool;
         private List<Timer> _timers;
 
         private static ServiceRunner _default;
@@ -58,22 +55,98 @@ namespace OpenWheels.Game
             public IEnumerator<T> Enumerator;
         }
 
-        private class Timer
+        private abstract class Timer
         {
-            public TimerData Data;
-            public InAction<TimerData> Update;
-            public Action<object> Finish;
-            public InAction<TimerData> Canceled;
-
+            protected TimerData Data;
             public bool IsCanceled => Data.Canceled;
             public bool IsDone => Data.Done;
 
-            public void Set(TimeSpan duration, InAction<TimerData> update, Action<object> finish, InAction<TimerData> canceled, object context)
+            public abstract void Update(TimeSpan delta);
+        }
+
+        private class VoidTimer : Timer
+        {
+            private Action<TimerData> _update;
+            private Action _finish;
+            private Action<TimerData> _canceled;
+
+            public void Set(TimeSpan duration, Action<TimerData> update, Action finish, Action<TimerData> canceled)
             {
-                Data = new TimerData(duration, context);
-                Update = update;
-                Finish = finish;
-                Canceled = canceled;
+                Data = ObjectPool<TimerData>.Shared.Get();
+                Data.Canceled = false;
+                Data.Duration = duration;
+                Data.Elapsed = TimeSpan.Zero;
+                _update = update;
+                _finish = finish;
+                _canceled = canceled;
+            }
+
+            public override void Update(TimeSpan delta)
+            {
+                Data.Delta = delta;
+
+                if (IsCanceled)
+                {
+                    _canceled?.Invoke(Data);
+                }
+                else
+                {
+                    Data.Elapsed += delta;
+                    _update?.Invoke(Data);
+
+                    if (IsDone)
+                        _finish?.Invoke();
+                }
+
+                if (IsCanceled || IsDone)
+                {
+                    ObjectPool<TimerData>.Shared.Return(Data);
+                    ObjectPool<VoidTimer>.Shared.Return(this);
+                }
+            }
+        }
+
+        private class Timer<T> : Timer
+        {
+            private Action<TimerData, T> _update;
+            private Action<T> _finish;
+            private Action<TimerData, T> _canceled;
+            private T _context;
+
+            public void Set(TimeSpan duration, Action<TimerData, T> update, Action<T> finish, Action<TimerData, T> canceled, T context)
+            {
+                Data = ObjectPool<TimerData>.Shared.Get();
+                Data.Canceled = false;
+                Data.Duration = duration;
+                Data.Elapsed = TimeSpan.Zero;
+                _update = update;
+                _finish = finish;
+                _canceled = canceled;
+                _context = context;
+            }
+
+            public override void Update(TimeSpan delta)
+            {
+                Data.Delta = delta;
+
+                if (IsCanceled)
+                {
+                    _canceled?.Invoke(Data, _context);
+                }
+                else
+                {
+                    Data.Elapsed += delta;
+                    _update?.Invoke(Data, _context);
+
+                    if (IsDone)
+                        _finish?.Invoke(_context);
+                }
+
+                if (IsCanceled || IsDone)
+                {
+                    ObjectPool<TimerData>.Shared.Return(Data);
+                    ObjectPool<Timer<T>>.Shared.Return(this);
+                }
             }
         }
 
@@ -83,9 +156,7 @@ namespace OpenWheels.Game
         public ServiceRunner()
         {
             _updatables = new List<IUpdatable>();
-            _coroutinePool = new ObjectPool<Coroutine<TimeSpan>>();
             _coroutines = new List<Coroutine<TimeSpan>>();
-            _timerPool = new ObjectPool<Timer>();
             _timers = new List<Timer>();
         }
 
@@ -144,7 +215,7 @@ namespace OpenWheels.Game
             if (coroutine == null)
                 throw new ArgumentNullException(nameof(coroutine));
 
-            var cr = _coroutinePool.Get();
+            var cr = ObjectPool<Coroutine<TimeSpan>>.Shared.Get();
             cr.Enumerator = coroutine;
             cr.Delay = TimeSpan.Zero;
             _coroutines.Add(cr);
@@ -154,11 +225,48 @@ namespace OpenWheels.Game
         /// Start a timer and run a method when it finishes.
         /// </summary>
         /// <param name="seconds">Duration of the timer in seconds.</param>
-        /// <param name="finish">Method to run when the timer finishes.</param>
         /// <param name="ctx">Context to set to avoid closures.</param>
-        public void RunAfter(float seconds, Action<object> finish, object ctx = null)
+        /// <param name="finish">Method to run when the timer finishes.</param>
+        /// <param name="canceled">Method to run when the timer is canceled.</param>
+        public void Run<T>(float seconds, T ctx, Action<T> finish, Action<TimerData, T> canceled = null)
         {
-            Run(seconds, null, finish, null, ctx);
+            Run(seconds, ctx, null, finish, canceled);
+        }
+
+        /// <summary>
+        /// Start a timer and run a method every frame while it's running.
+        /// </summary>
+        /// <param name="seconds">Duration of the timer in seconds.</param>
+        /// <param name="ctx">Context to set to avoid closures.</param>
+        /// <param name="update">Method to run every frame while the timer is running.</param>
+        /// <param name="canceled">Method to run when the timer is canceled.</param>
+        public void Run<T>(float seconds, T ctx, Action<TimerData, T> update, Action<TimerData, T> canceled)
+        {
+            Run(seconds, ctx, update);
+        }
+
+        /// <summary>
+        /// Start a timer and run a method every frame while it's running and another method when it's finished or canceled.
+        /// </summary>
+        /// <param name="seconds">Duration of the timer in seconds.</param>
+        /// <param name="ctx">Context to set to avoid closures.</param>
+        /// <param name="update">Method to run every frame while the timer is running.</param>
+        /// <param name="finish">Method to run when the timer finishes.</param>
+        /// <param name="canceled">Method to run when the timer is canceled.</param>
+        public void Run<T>(float seconds, T ctx, Action<TimerData, T> update, Action<T> finish = null, Action<TimerData, T> canceled = null)
+        {
+            Run(TimeSpan.FromSeconds(seconds), ctx, update, finish, canceled);
+        }
+
+        /// <summary>
+        /// Start a timer and run a method when it finishes.
+        /// </summary>
+        /// <param name="seconds">Duration of the timer in seconds.</param>
+        /// <param name="finish">Method to run when the timer finishes.</param>
+        /// <param name="canceled">Method to run when the timer is canceled.</param>
+        public void Run(float seconds, Action finish, Action<TimerData> canceled = null)
+        {
+            Run(seconds, null, finish, canceled);
         }
 
         /// <summary>
@@ -166,34 +274,10 @@ namespace OpenWheels.Game
         /// </summary>
         /// <param name="seconds">Duration of the timer in seconds.</param>
         /// <param name="update">Method to run every frame while the timer is running.</param>
-        /// <param name="ctx">Context to set to avoid closures.</param>
-        public void Run(float seconds, InAction<TimerData> update, object ctx)
-        {
-            Run(seconds, update, null, null, ctx);
-        }
-
-        /// <summary>
-        /// Start a timer and run a method every frame while it's running and another method when it finishes.
-        /// </summary>
-        /// <param name="seconds">Duration of the timer in seconds.</param>
-        /// <param name="update">Method to run every frame while the timer is running.</param>
-        /// <param name="finish">Method to run when the timer finishes.</param>
-        /// <param name="ctx">Context to set to avoid closures.</param>
-        public void Run(float seconds, InAction<TimerData> update, Action<object> finish, object ctx)
-        {
-            Run(TimeSpan.FromSeconds(seconds), update, finish, null, ctx);
-        }
-
-        /// <summary>
-        /// Start a timer and run a method every frame while it's running and another method when it's canceled.
-        /// </summary>
-        /// <param name="seconds">Duration of the timer in seconds.</param>
-        /// <param name="update">Method to run every frame while the timer is running.</param>
         /// <param name="canceled">Method to run when the timer is canceled.</param>
-        /// <param name="ctx">Context to set to avoid closures.</param>
-        public void Run(float seconds, InAction<TimerData> update, InAction<TimerData> canceled, object ctx)
+        public void Run(float seconds, Action<TimerData> update, Action<TimerData> canceled)
         {
-            Run(TimeSpan.FromSeconds(seconds), update, null, canceled, ctx);
+            Run(seconds, update);
         }
 
         /// <summary>
@@ -203,70 +287,86 @@ namespace OpenWheels.Game
         /// <param name="update">Method to run every frame while the timer is running.</param>
         /// <param name="finish">Method to run when the timer finishes.</param>
         /// <param name="canceled">Method to run when the timer is canceled.</param>
-        /// <param name="ctx">Context to set to avoid closures.</param>
-        public void Run(float seconds, InAction<TimerData> update = null, Action<object> finish = null, InAction<TimerData> canceled = null, object ctx = null)
+        public void Run(float seconds, Action<TimerData> update, Action finish = null, Action<TimerData> canceled = null)
         {
-            Run(TimeSpan.FromSeconds(seconds), update, finish, canceled, ctx);
+            Run(TimeSpan.FromSeconds(seconds), update, finish, canceled);
         }
 
         /// <summary>
         /// Start a timer and run a method when it finishes.
         /// </summary>
         /// <param name="duration">Duration of the timer.</param>
-        /// <param name="finish">Method to run when the timer finishes.</param>
         /// <param name="ctx">Context to set to avoid closures.</param>
-        public void RunAfter(TimeSpan duration, Action<object> finish, object ctx = null)
+        /// <param name="finish">Method to run when the timer finishes.</param>
+        /// <param name="canceled">Method to run when the timer is canceled.</param>
+        public void Run<T>(TimeSpan duration, T ctx, Action<T> finish, Action<TimerData, T> canceled = null)
         {
-            Run(duration, null, finish, null, ctx);
+            Run(duration, ctx, null, finish, canceled);
         }
 
         /// <summary>
         /// Start a timer and run a method every frame while it's running.
         /// </summary>
         /// <param name="duration">Duration of the timer.</param>
-        /// <param name="update">Method to run every frame while the timer is running.</param>
         /// <param name="ctx">Context to set to avoid closures.</param>
-        public void Run(TimeSpan duration, InAction<TimerData> update, object ctx)
-        {
-            Run(duration, update, null, null, ctx);
-        }
-
-        /// <summary>
-        /// Start a timer and run a method every frame while it's running and another method when it finishes.
-        /// </summary>
-        /// <param name="duration">Duration of the timer.</param>
-        /// <param name="update">Method to run every frame while the timer is running.</param>
-        /// <param name="finish">Method to run when the timer finishes.</param>
-        /// <param name="ctx">Context to set to avoid closures.</param>
-        public void Run(TimeSpan duration, InAction<TimerData> update, Action<object> finish, object ctx)
-        {
-            Run(duration, update, finish, null, ctx);
-        }
-
-        /// <summary>
-        /// Start a timer and run a method every frame while it's running and another method when it's canceled.
-        /// </summary>
-        /// <param name="duration">Duration of the timer.</param>
         /// <param name="update">Method to run every frame while the timer is running.</param>
         /// <param name="canceled">Method to run when the timer is canceled.</param>
-        /// <param name="ctx">Context to set to avoid closures.</param>
-        public void Run(TimeSpan duration, InAction<TimerData> update, InAction<TimerData> canceled, object ctx)
+        public void Run<T>(TimeSpan duration, T ctx, Action<TimerData, T> update, Action<TimerData, T> canceled)
         {
-            Run(duration, update, null, canceled, ctx);
+            Run(duration, ctx, update);
         }
 
         /// <summary>
         /// Start a timer and run a method every frame while it's running and another method when it's finished or canceled.
         /// </summary>
         /// <param name="duration">Duration of the timer.</param>
+        /// <param name="ctx">Context to set to avoid closures.</param>
         /// <param name="update">Method to run every frame while the timer is running.</param>
         /// <param name="finish">Method to run when the timer finishes.</param>
         /// <param name="canceled">Method to run when the timer is canceled.</param>
-        /// <param name="ctx">Context to set to avoid closures.</param>
-        public void Run(TimeSpan duration, InAction<TimerData> update, Action<object> finish, InAction<TimerData> canceled, object ctx = null)
+        public void Run<T>(TimeSpan duration, T ctx, Action<TimerData, T> update, Action<T> finish = null, Action<TimerData, T> canceled = null)
         {
-            var tm = _timerPool.Get();
+            var tm = ObjectPool<Timer<T>>.Shared.Get();
             tm.Set(duration, update, finish, canceled, ctx);
+            _timers.Add(tm);
+        }
+
+        /// <summary>
+        /// Start a timer and run a method when it finishes.
+        /// </summary>
+        /// <param name="duration">Duration of the timer.</param>
+        /// <param name="seconds">Duration of the timer in seconds.</param>
+        /// <param name="finish">Method to run when the timer finishes.</param>
+        /// <param name="canceled">Method to run when the timer is canceled.</param>
+        public void Run(TimeSpan duration, Action finish, Action<TimerData> canceled = null)
+        {
+            Run(duration, null, finish, canceled);
+        }
+
+        /// <summary>
+        /// Start a timer and run a method every frame while it's running.
+        /// </summary>
+        /// <param name="duration">Duration of the timer.</param>
+        /// <param name="seconds">Duration of the timer in seconds.</param>
+        /// <param name="update">Method to run every frame while the timer is running.</param>
+        /// <param name="canceled">Method to run when the timer is canceled.</param>
+        public void Run(TimeSpan duration, Action<TimerData> update, Action<TimerData> canceled)
+        {
+            Run(duration, update);
+        }
+
+        /// <summary>
+        /// Start a timer and run a method every frame while it's running and another method when it's finished or canceled.
+        /// </summary>
+        /// <param name="duration">Duration of the timer.</param>
+        /// <param name="seconds">Duration of the timer in seconds.</param>
+        /// <param name="update">Method to run every frame while the timer is running.</param>
+        /// <param name="finish">Method to run when the timer finishes.</param>
+        /// <param name="canceled">Method to run when the timer is canceled.</param>
+        public void Run(TimeSpan duration, Action<TimerData> update, Action finish = null, Action<TimerData> canceled = null)
+        {
+            var tm = ObjectPool<VoidTimer>.Shared.Get();
+            tm.Set(duration, update, finish, canceled);
             _timers.Add(tm);
         }
 
@@ -452,19 +552,23 @@ namespace OpenWheels.Game
         }
 
         /// <summary>
+        /// Perform a <see cref="Tween"/> over the given time.
+        /// </summary>
+        /// <param name="tween">Tween to perform.</param>
+        /// <param name="seconds">Duration of the tween in seconds.</param>
+        public void Tween(Tween tween, float seconds)
+        {
+            Run(TimeSpan.FromSeconds(seconds), tween, (td, tw) => tw.Apply(td.Progress));
+        }
+
+        /// <summary>
         /// Perform a <see cref="Tween"/> over a given <see cref="TimeSpan"/>.
         /// </summary>
         /// <param name="tween">Tween to perform.</param>
         /// <param name="duration">Duration of the tween.</param>
         public void Tween(Tween tween, TimeSpan duration)
         {
-            Run(duration, (in TimerData td) => UpdateTween(td), tween);
-        }
-
-        private static void UpdateTween(in TimerData td)
-        {
-            var tween = (Tween) td.Context;
-            tween.Apply(td.Progress);
+            Run(duration, tween, (td, tw) => tw.Apply(td.Progress));
         }
 
         #endregion
@@ -513,26 +617,10 @@ namespace OpenWheels.Game
             for (var i = _timers.Count - 1; i >= 0; i--)
             {
                 var t = _timers[i];
-                t.Data.Delta = delta;
+                t.Update(delta);
 
-                if (t.IsCanceled)
-                {
-                    t.Canceled?.Invoke(t.Data);
+                if (t.IsCanceled || t.IsDone)
                     _timers.RemoveAt(i);
-                }
-                else
-                {
-                    ref TimerData ctx = ref t.Data;
-                    ctx.Elapsed += delta;
-                    t.Update?.Invoke(ctx);
-
-                    if (t.IsDone)
-                    {
-                        t.Finish?.Invoke(t.Data.Context);
-                        _timers.RemoveAt(i);
-                        _timerPool.Return(t);
-                    }
-                }
             }
         }
     }
