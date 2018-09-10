@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <ShaderContentIncludePath>Shaders</ShaderContentIncludePath>
+    <ShaderOutputPath>$(BaseIntermediateOutputPath)</ShaderOutputPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Description>Renderer implementation for OpenWheels.</Description>
+    <PackageTags>2D Graphics Rendering</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenWheels.Rendering\OpenWheels.Rendering.csproj" />
+    <PackageReference Include="Veldrid" Version="4.4.0" />
+    <PackageReference Include="ShaderGen.Primitives" Version="1.2.0-g6c2ba50db6" />
+    <PackageReference Include="ShaderGen.Build" PrivateAssets="All" Version="1.2.0-g6c2ba50db6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="generated/SpriteShader*">
+      <LogicalName>%(FileName)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>
