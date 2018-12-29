@@ -6,7 +6,7 @@
   <PropertyGroup>
     <Authors>Jesse Gielen</Authors>
     <RepositoryUrl>https://github.com/Jjagg/OpenWheels</RepositoryUrl>
-    <PackageLicenseUrl>https://github.com/Jjagg/OpenWheels/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
