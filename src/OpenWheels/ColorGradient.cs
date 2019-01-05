@@ -9,7 +9,7 @@ namespace OpenWheels
     public class ColorGradient : IEnumerable<ColorPoint>
     {
         private readonly List<ColorPoint> _colorPoints;
-        private static readonly Color ZeroColor = Color.Black;
+        private static readonly HsvColor ZeroColor = Color.Black.ToHsv();
 
         /// <summary>
         /// Create a new ColorGradient.
@@ -28,8 +28,8 @@ namespace OpenWheels
         {
             _colorPoints = new List<ColorPoint>
             {
-                new ColorPoint(0f, zeroColor),
-                new ColorPoint(1f, oneColor)
+                new ColorPoint(0f, zeroColor.ToHsv()),
+                new ColorPoint(1f, oneColor.ToHsv())
             };
         }
 
@@ -99,7 +99,7 @@ namespace OpenWheels
         /// <param name="value">Value to evaluate the gradient at.</param>
         public Color Map(float value)
         {
-            return (Color) MapHsv(value);
+            return MapHsv(value).ToRgb();
         }
 
         /// </inheritdoc>
