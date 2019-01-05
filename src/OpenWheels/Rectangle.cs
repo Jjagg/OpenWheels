@@ -177,10 +177,29 @@ namespace OpenWheels
         }
 
         /// <summary>
+        /// Check if this rectangle contains a point. Points on the border are defined to be outside the rectangle.
+        /// </summary>
+        /// <param name="point">Coordinates to check for if they're inside the rectangle.</param>
+        public bool Contains(Point2 point) => Left < point.X && point.X < Right && Top < point.Y && point.Y < Bottom;
+
+        /// <summary>
+        /// Check if this rectangle contains a vector. Points on the border are defined to be outside the rectangle.
+        /// </summary>
+        /// <param name="vector">Coordinates to check for if they're inside the rectangle.</param>
+        public bool Contains(Vector2 vector) => Left < vector.X && vector.X < Right && Top < vector.Y && vector.Y < Bottom;
+
+        /// <summary>
+        /// Check if this rectangle contains a coordinate pair. Points on the border are defined to be outside the rectangle.
+        /// </summary>
+        /// <param name="x">X coordinate.</param>
+        /// <param name="y">Y coordinate.</param>
+        public bool Contains(float x, float y) => Left < x && x < Right && Top < y && y < Bottom;
+
+        /// <summary>
         /// Create a rectangle with the same center, but expanded by <paramref name="v"/> at all sides.
         /// </summary>
         /// <param name="v">Amount to inflate the rectangle at the four sides.</param>
-        /// <remarks>A negative value can be passed. This create a shrinked rectangle.</remarks>
+        /// <remarks>A negative value can be passed. This creates a shrinked rectangle.</remarks>
         public Rectangle Inflate(int v)
         {
             return Inflate(v, v);
@@ -192,7 +211,7 @@ namespace OpenWheels
         /// </summary>
         /// <param name="h">Amount to inflate the rectangle at the left and right sides.</param>
         /// <param name="v">Amount to inflate the rectangle at the top and bottom sides.</param>
-        /// <remarks>A negative value can be passed. This create a shrinked rectangle.</remarks>
+        /// <remarks>A negative value can be passed. This creates a shrinked rectangle.</remarks>
 #if NETSTANDARD2_0
         [Pure]
 #endif
