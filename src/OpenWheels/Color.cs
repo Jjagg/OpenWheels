@@ -161,13 +161,15 @@ namespace OpenWheels
         /// <summary>
         /// Parse a <see cref="Color"/> from a <see cref="string"/>.
         /// Expected format is 3 or 4 byte values separated by any number of ',' or ' '.
+        /// </summary>
+        /// <remarks>
         /// Values are parsed as R, G, B, A in that order. Alpha is optional.
         /// All of the following are valid:
         /// - "212, 120, 27"
         /// - "100, 232, 242, 250"
         /// - "0 255 255 255"
         /// - "   0, , ,, 8, ,  , 210,    255"
-        /// </summary>
+        /// </remarks>
         /// <param name="str">String to parse.</param>
         /// <returns>The parsed color.</returns>
         /// <exception cref="FormatException">If the given string does not match the expected format.</exception>
@@ -185,10 +187,25 @@ namespace OpenWheels
             return new Color(r, g, b, a);
         }
 
+        /// <inheritdoc />
         public override string ToString()
         {
             var aStr = A == 255 ? string.Empty : ", " + A;
             return $"{R}, {G}, {B}{aStr}";
+        }
+
+        public static bool operator !=(Color left, Color right) => left.Packed != right.Packed;
+
+        public static bool operator ==(Color left, Color right) => left.Packed == right.Packed;
+
+        public bool Equals(Color other) => Packed == other.Packed;
+
+        public override int GetHashCode() => (int)Packed;
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is Color other && Equals(other);
         }
     }
 }
