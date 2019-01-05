@@ -564,7 +564,7 @@ namespace OpenWheels.Rendering
         /// <param name="rect">The bounds of the rectangle.</param>
         /// <param name="color">Color of the outline.</param>
         /// <param name="lineWidth">Stroke width.</param>
-        public void DrawRect(RectangleF rect, Color color, float lineWidth = 1)
+        public void DrawRect(in RectangleF rect, Color color, float lineWidth = 1)
         {
             var p1 = new Vector2(rect.Left, rect.Top);
             var p2 = new Vector2(rect.Right, rect.Top);
@@ -588,7 +588,7 @@ namespace OpenWheels.Rendering
         ///   The maximum distance from any point on the drawn circle to the actual circle.
         ///   The number of segments to draw is calculated from this value.
         /// </param>
-        public void DrawRoundedRect(RectangleF rectangle, float radius, Color color, int lineWidth = 1, float maxError = .25f)
+        public void DrawRoundedRect(in RectangleF rectangle, float radius, Color color, int lineWidth = 1, float maxError = .25f)
         {
             DrawRoundedRect(rectangle, radius, radius, radius, radius, color, lineWidth);
         }
@@ -610,7 +610,7 @@ namespace OpenWheels.Rendering
         /// <exception cref="ArgumentException">
         ///   If any of the radii is larger than half the width or height of the rectangle.
         /// </exception>
-        public void DrawRoundedRect(RectangleF rectangle, float radiusTl, float radiusTr, float radiusBr, float radiusBl, Color color, int lineWidth = 1, float maxError = .25f)
+        public void DrawRoundedRect(in RectangleF rectangle, float radiusTl, float radiusTr, float radiusBr, float radiusBl, Color color, int lineWidth = 1, float maxError = .25f)
         {
             if (radiusTl > rectangle.Width / 2f || radiusTl > rectangle.Height / 2f ||
                 radiusTr > rectangle.Width / 2f || radiusTr > rectangle.Height / 2f ||
@@ -733,7 +733,7 @@ namespace OpenWheels.Rendering
         ///   The number of segments to draw is calculated from this value.
         /// </param>
         /// <exception cref="ArgumentException">If the radius is larger than half the width or height of the rectangle.</exception>
-        public void FillRoundedRect(RectangleF rectangle, float radius, Color color, float maxError = .25f)
+        public void FillRoundedRect(in RectangleF rectangle, float radius, Color color, float maxError = .25f)
         {
             if (radius > rectangle.Width / 2f || radius > rectangle.Height / 2f)
                 throw new ArgumentException($"Radius too large. The rectangle size is ({rectangle.Size.X}, {rectangle.Size.Y}), the radius is {radius}.", nameof(radius));
@@ -868,7 +868,7 @@ namespace OpenWheels.Rendering
         ///   The number of segments to draw is calculated from this value.
         /// </param>
         /// <param name="uvRect">The rectangle inside the sprite to source uv coordinates from.</param>
-        private void FillCircleSegment(Vector2 center, float radius, float start, float end, Color color, float maxError, RectangleF uvRect)
+        private void FillCircleSegment(Vector2 center, float radius, float start, float end, Color color, float maxError, in RectangleF uvRect)
         {
             ComputeCircleSegments(radius, maxError, end - start, out var step, out var segments);
 
