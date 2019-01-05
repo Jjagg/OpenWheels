@@ -239,7 +239,7 @@ namespace OpenWheels.Rendering
         }
 
         /// <summary>
-        /// Get or set the scissor rectangle.
+        /// Get or set the scissor rectangle. Setting the scissor rectangle automatically enables it.
         /// </summary>
         public Rectangle ScissorRect
         {
@@ -315,7 +315,7 @@ namespace OpenWheels.Rendering
 
         #endregion
 
-        #region Set Texture and Matrix
+        #region Set State
 
         /// <summary>
         /// Set <see cref="PositionTransform"/> so vertex coordinates are mapped from viewport pixel space to
@@ -372,6 +372,14 @@ namespace OpenWheels.Rendering
         public void SetSprite(int texture, in Rectangle srcRect)
         {
             Sprite = new Sprite(texture, srcRect);
+        }
+
+        /// <summary>
+        /// Disable scissor rectangle usage (i.e. clipping).
+        /// </summary>
+        public void DisableScissorRect()
+        {
+            ScissorRect = Rectangle.Empty;
         }
 
         #endregion
