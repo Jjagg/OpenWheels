@@ -152,6 +152,25 @@ namespace OpenWheels
         }
 
         /// <summary>
+        /// Check if this rectangle contains a point.
+        /// </summary>
+        /// <param name="point">Coordinates to check for if they're inside the rectangle.</param>
+        public bool Contains(Point2 point) => Left < point.X && point.X < Right && Top < point.Y && point.Y < Bottom;
+
+        /// <summary>
+        /// Check if this rectangle contains a vector.
+        /// </summary>
+        /// <param name="vector">Coordinates to check for if they're inside the rectangle.</param>
+        public bool Contains(Vector2 vector) => Left < vector.X && vector.X < Right && Top < vector.Y && vector.Y < Bottom;
+
+        /// <summary>
+        /// Check if this rectangle contains a coordinate pair.
+        /// </summary>
+        /// <param name="x">X coordinate.</param>
+        /// <param name="y">Y coordinate.</param>
+        public bool Contains(float x, float y) => Left < x && x < Right && Top < y && y < Bottom;
+
+        /// <summary>
         /// Create a rectangle with the same center, but expanded by <paramref name="v"/> at all sides.
         /// </summary>
         /// <param name="v">Amount to inflate the rectangle at the four sides.</param>
