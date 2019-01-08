@@ -1,9 +1,11 @@
 language: csharp
-solution: src/OpenWheels.sln
+solution: OpenWheels.sln
 dotnet: 2.1.300
 mono: none
 git:
   depth: 500
-script: dotnet pack -c Release src/OpenWheels.sln
+script:
+  - dotnet test test/**/*.csproj
+  - dotnet pack -c Release OpenWheels.sln
 after_success: dotnet nuget push "bin/Release/*.nupkg" -s https://www.myget.org/F/jjagg -k $MYGET_JJAGG_API_KEY
 
