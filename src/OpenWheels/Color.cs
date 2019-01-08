@@ -93,7 +93,7 @@ namespace OpenWheels
         /// <param name="b">Blue channel value.</param>
         /// <param name="a">Alpha channel value. Defaults to opaque (1f).</param>
         public Color(float r, float g, float b, float a = 1f)
-            : this((int) (r * 255), (int) (g * 255), (int) (b * 255), (int) (a * 255))
+            : this((int) (r * 255 + .5f), (int) (g * 255 + .5f), (int) (b * 255 + .5f), (int) (a * 255 + .5f))
         {
         }
 

@@ -1,0 +1,10 @@
+
+TextureStore : IDisposable
+{
+    int CreateTexture(int width, int height);
+    bool DestroyTexture(int id);
+    bool SetTextureData(int id, Span<Color> data);
+    bool SetTextureData(int id, Span<Color> data, Rectangle rect);
+    bool GetTextureSize(int id, out int width, out int height);
+}
+
