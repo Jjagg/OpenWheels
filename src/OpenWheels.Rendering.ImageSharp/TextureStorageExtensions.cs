@@ -33,64 +33,6 @@ namespace OpenWheels.Rendering.ImageSharp
                 return RegisterImage(storage, img);
         }
 
-        /// <summary>
-        /// Load a font and register it in the texture storage.
-        /// </summary>
-        /// <param name="path">Path to the font file.</param>
-        /// <param name="size">Size to render the font at.</param>
-        /// <param name="fallbackCharacter">Optional fallback character for the font. Defaults to <c>null</c> (no fallback).</param>
-        public static TextureFont LoadFont(this ITextureStorage storage, string path, float size, int? fallbackCharacter = null)
-        {
-            FontAtlasHelpers.CreateFont(path, size, out var glyphMap, out var image);
-            var texId = RegisterImage(storage, image);
-            image.Dispose();
-            return new TextureFont(glyphMap, texId, fallbackCharacter);
-        }
-
-        /// <summary>
-        /// Load a font and register it in the texture storage.
-        /// </summary>
-        /// <param name="path">Path to the font file.</param>
-        /// <param name="size">Size to render the font at.</param>
-        /// <param name="ranges">The character ranges to render to the font atlas.</param>
-        /// <param name="fallbackCharacter">Optional fallback character for the font. Defaults to <c>null</c> (no fallback).</param>
-        public static TextureFont LoadFont(this ITextureStorage storage, string path, float size, IEnumerable<Range<int>> ranges, int? fallbackCharacter = null)
-        {
-            FontAtlasHelpers.CreateFont(path, size, ranges, out var glyphMap, out var image);
-            var texId = RegisterImage(storage, image);
-            image.Dispose();
-            return new TextureFont(glyphMap, texId, fallbackCharacter);
-        }
-
-        /// <summary>
-        /// Load a system font and register it in the texture storage.
-        /// </summary>
-        /// <param name="name">Name of the system font.</param>
-        /// <param name="size">Size to render the font at.</param>
-        /// <param name="fallbackCharacter">Optional fallback character for the font. Defaults to <c>null</c> (no fallback).</param>
-        public static TextureFont LoadSystemFont(this ITextureStorage storage, string name, float size, int? fallbackCharacter = null)
-        {
-            FontAtlasHelpers.CreateSystemFont(name, size, out var glyphMap, out var image);
-            var texId = RegisterImage(storage, image);
-            image.Dispose();
-            return new TextureFont(glyphMap, texId, fallbackCharacter);
-        }
-
-        /// <summary>
-        /// Load a system font and register it in the texture storage.
-        /// </summary>
-        /// <param name="name">Name of the system font.</param>
-        /// <param name="size">Size to render the font at.</param>
-        /// <param name="ranges">The character ranges to render to the font atlas.</param>
-        /// <param name="fallbackCharacter">Optional fallback character for the font. Defaults to <c>null</c> (no fallback).</param>
-        public static TextureFont LoadSystemFont(this ITextureStorage storage, string name, float size, IEnumerable<Range<int>> ranges, int? fallbackCharacter = null)
-        {
-            FontAtlasHelpers.CreateSystemFont(name, size, ranges, out var glyphMap, out var image);
-            var texId = RegisterImage(storage, image);
-            image.Dispose();
-            return new TextureFont(glyphMap, texId, fallbackCharacter);
-        }
-
 #endif
 
         /// <summary>
@@ -102,37 +44,6 @@ namespace OpenWheels.Rendering.ImageSharp
         {
             using (var img = Image.Load<Rgba32>(imageStream))
                 return RegisterImage(storage, img);
-        }
-
-        /// <summary>
-        /// Load a font from a stream and register it in the texture storage. Includes Unicode latin characters.
-        /// </summary>
-        /// <param name="storage">The texture storage to register the texture in.</param>
-        /// <param name="fontStream">Stream of the font data.</param>
-        /// <param name="size">Size to render the font at.</param>
-        /// <param name="fallbackCharacter">Optional fallback character for the font. Defaults to <c>null</c> (no fallback).</param>
-        public static TextureFont LoadFont(this ITextureStorage storage, Stream fontStream, float size, int? fallbackCharacter = null)
-        {
-            FontAtlasHelpers.CreateFont(fontStream, size, out var glyphMap, out var image);
-            var texId = RegisterImage(storage, image);
-            image.Dispose();
-            return new TextureFont(glyphMap, texId, fallbackCharacter);
-        }
-
-        /// <summary>
-        /// Load a font from a stream and register it in the texture storage.
-        /// </summary>
-        /// <param name="storage">The texture storage to register the texture in.</param>
-        /// <param name="fontStream">Stream of the font data.</param>
-        /// <param name="size">Size to render the font at.</param>
-        /// <param name="ranges">The character ranges to render to the font atlas.</param>
-        /// <param name="fallbackCharacter">Optional fallback character for the font. Defaults to <c>null</c> (no fallback).</param>
-        public static TextureFont LoadFont(this ITextureStorage storage, Stream fontStream, float size, IEnumerable<Range<int>> ranges, int? fallbackCharacter = null)
-        {
-            FontAtlasHelpers.CreateFont(fontStream, size, ranges, out var glyphMap, out var image);
-            var texId = RegisterImage(storage, image);
-            image.Dispose();
-            return new TextureFont(glyphMap, texId, fallbackCharacter);
         }
 
         private static int RegisterImage(ITextureStorage storage, Image<Rgba32> img)

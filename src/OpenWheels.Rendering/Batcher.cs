@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Numerics;
-using SixLabors.Fonts;
 
 namespace OpenWheels.Rendering
 {
@@ -106,8 +105,8 @@ namespace OpenWheels.Rendering
 
         private readonly List<BatchInfo> _batches;
         private bool _finished;
+
         private Sprite _sprite;
-        private TextureFont _font;
         private RectangleF _spriteUv;
         private bool _useSpriteUv;
         private BlendState _blendState;
@@ -175,23 +174,6 @@ namespace OpenWheels.Rendering
                         (float) _sprite.SrcRect.Height / texSize.Height);
                     _useSpriteUv = true;
                 }
-            }
-        }
-
-        /// <summary>
-        /// Get or set the font used for rendering text.
-        /// </summary>
-        /// <exception cref="ArgumentNullException">If the value passed to the setter is <c>null</c>.</exception>
-        public TextureFont TextureFont
-        {
-            get => _font;
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-                _font = value;
-                // TODO glyph map contains pixel boundaries, maybe change to UV
-                //      less generic but more efficient for us
             }
         }
 
@@ -390,7 +372,7 @@ namespace OpenWheels.Rendering
         /// <param name="color">Color of the line strip.</param>
         /// <param name="lineWidth">Stroke width.</param>
         /// <exception cref="ArgumentException">If <paramref name="points"/> has less than 2 points.</exception>
-        public void DrawLineStrip(Span<Vector2> points, Color color, float lineWidth = 1)
+        public void DrawLineStrip(ReadOnlySpan<Vector2> points, Color color, float lineWidth = 1)
         {
 
             var c = points.Length;
@@ -871,55 +853,20 @@ namespace OpenWheels.Rendering
         #region Text
 
         /// <summary>
-        /// Render text with the active font. Changes the active <see cref="Sprite"/>.
+        /// Render text. Changes the active <see cref="Sprite"/>.
         /// </summary>
+        /// <param name="textBatcher">Text batcher that handles text layout and batching.</param>
+        /// <param name="fontInfo">The font to use.</param>
         /// <param name="text">The text to draw.</param>
-        /// <param name="position">Position to draw the text at.</param>
         /// <param name="color">Color of the text.</param>
-        /// <param name="scale">Scale of the text.</param>
-        /// <param name="ha">Horizontal alignment of the text.</param>
-        /// <param name="va">Vertical alignment of the text.</param>
-        /// <param name="wrappingWidth">Width to wrap the text at. Pass -1 to not wrap (default).</param>
-        /// <param name="tabWidth">Number of spaces in a tab.</param>
-        /// <exception cref="InvalidOperationException">If <see cref="TextureFont"/> is not set.</exception>
+        /// <param name="tlo">Layout options for rendering the text.</param>
         /// <exception cref="InvalidOperationException">
         ///   If a character from the given text has no glyph registered in the
-        ///   active font and no fallback character is set.
+        ///   font and no fallback character is set.
         /// </exception>
-        /// <seealso cref="Font"/>
-        public void DrawText(string text, Vector2 position, Color color, float scale = 1f,
-            HorizontalAlignment ha = HorizontalAlignment.Left, VerticalAlignment va = VerticalAlignment.Top,
-            float wrappingWidth = -1f, float tabWidth = 4)
+        public void DrawText(ITextRenderer textBatcher, in FontInfo fontInfo, ReadOnlySpan<char> text, Color color, in TextLayoutOptions tlo)
         {
-            if (TextureFont == null)
-                throw new InvalidOperationException("No font is set.");
-
-            var slFont = TextureFont.GlyphMap.Font;
-            // TODO other dpi support
-            var dpi = 72 * scale;
-            // TODO there is no setter for Font on RendererOptions, once there is we can cache an instance
-            var ro = new RendererOptions(slFont, dpi, dpi, position);
-            ro.HorizontalAlignment = ha;
-            ro.VerticalAlignment = va;
-            ro.WrappingWidth = wrappingWidth;
-            ro.TabWidth = tabWidth;
-            // TODO this generates garbage; should push for an overload to use an existing collection
-            // TODO StringBuilder overload
-            TextMeasurer.TryMeasureCharacterBounds(text, ro, out var gms);
-
-            foreach (var gm in gms)
-            {
-                var gd = TextureFont.GlyphMap.GetGlyphData(gm.Codepoint);
-                if (gd.Character == 0)
-                {
-                    if (TextureFont.FallbackCharacter.HasValue)
-                        throw new InvalidOperationException($"Character '{gm.Character}' is missing from the glyph map of active font and no fallback character is set.");
-                    gd = TextureFont.FallbackGlyphData;
-                }
-
-                Sprite = new Sprite(TextureFont.Texture, gd.Bounds);
-                FillRect(gm.Bounds.ToOwRect(), color);
-            }
+            textBatcher.RenderText(this, fontInfo, text, tlo);
         }
 
         #endregion
@@ -931,7 +878,7 @@ namespace OpenWheels.Rendering
         /// </summary>
         /// <param name="ps">Vertices of the triangle strip.</param>
         /// <exception cref="ArgumentException">If less than 3 vertices are passed.</exception>
-        public void FillTriangleStrip(Span<Vertex> ps)
+        public void FillTriangleStrip(ReadOnlySpan<Vertex> ps)
         {
             var c = ps.Length;
             if (c < 3)
@@ -961,7 +908,7 @@ namespace OpenWheels.Rendering
         /// <param name="center">The center vertex.</param>
         /// <param name="vs">The other vertices.</param>
         /// <exception cref="ArgumentException">If <paramref name="vs"/> has less than 2 vertices.</exception>
-        public void FillTriangleFan(Vertex center, Span<Vertex> vs)
+        public void FillTriangleFan(Vertex center, ReadOnlySpan<Vertex> vs)
         {
             var c = vs.Length;
             if (c < 2)
