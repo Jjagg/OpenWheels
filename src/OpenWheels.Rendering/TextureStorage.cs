@@ -9,7 +9,11 @@ namespace OpenWheels.Rendering
     public abstract class TextureStorage<T> : ITextureStorage
     {
         /// <inheritdoc />
+        public abstract int TextureCount { get; }
+        /// <inheritdoc />
         public abstract int CreateTexture(int width, int height);
+        /// <inheritdoc />
+        public abstract void DestroyTexture(int id);
         /// <inheritdoc />
         public abstract Size GetTextureSize(int id);
         /// <inheritdoc />
@@ -23,5 +27,16 @@ namespace OpenWheels.Rendering
         /// <param name="id">Id of the texture.</param>
         /// <returns>The native texture with the matching id or <c>default(T)</c> if there is no matching texture.</returns>
         public abstract T GetTexture(int id);
+
+        /// <inheritdoc />
+        public event EventHandler<TextureCreatedEventArgs> TextureCreated;
+        /// <inheritdoc />
+        public event EventHandler<TextureDestroyedEventArgs> TextureDestroyed;
+
+        protected void OnTextureCreated(int id, int width, int height)
+            => TextureCreated?.Invoke(this, new TextureCreatedEventArgs(id, width, height));
+
+        protected void OnTextureDestroyed(int id)
+            => TextureDestroyed?.Invoke(this, new TextureDestroyedEventArgs(id));
     }
 }

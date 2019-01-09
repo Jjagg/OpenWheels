@@ -16,10 +16,8 @@ namespace OpenWheels.Veldrid
     public class VeldridRenderer : IRenderer, IDisposable
     {
         public GraphicsDevice GraphicsDevice { get; }
-        private const int InitialTextureCount = 64;
 
-        private readonly List<int> _freeIds;
-        private Texture[] _textures;
+        private TextureStorage<Texture> _textureStorage;
         private TextureView[] _textureViews;
         private ResourceSet[] _textureResourceSets;
         private Lazy<ResourceSet>[] _samplerResourceSets;
@@ -53,7 +51,7 @@ namespace OpenWheels.Veldrid
         /// </summary>
         /// <param name="graphicsDevice">The <see cref="global::Veldrid.GraphicsDevice"/> to render with.</param>
         /// <exception cref="ArgumentNullException">If <paramref name="graphicsDevice"/> is <c>null</c>.</exception>
-        public VeldridRenderer(GraphicsDevice graphicsDevice)
+        public VeldridRenderer(GraphicsDevice graphicsDevice, TextureStorage<Texture> textureStorage)
         {
             if (graphicsDevice == null)
                 throw new ArgumentNullException(nameof(graphicsDevice));
@@ -61,11 +59,12 @@ namespace OpenWheels.Veldrid
             GraphicsDevice = graphicsDevice;
             _currentTarget = GraphicsDevice.SwapchainFramebuffer;
 
-            _freeIds = new List<int>(InitialTextureCount);
-            _freeIds.AddRange(Enumerable.Range(0, InitialTextureCount));
-            _textures = new Texture[InitialTextureCount];
-            _textureViews = new TextureView[InitialTextureCount];
-            _textureResourceSets = new ResourceSet[InitialTextureCount];
+            _textureStorage = textureStorage;
+            _textureViews = new TextureView[textureStorage.TextureCount];
+            _textureResourceSets = new ResourceSet[textureStorage.TextureCount];
+            // We lazily create and cache texture views and resource sets when required.
+            // When a texture is destroyed the matching cached values are destroyed as well.
+            _textureStorage.TextureDestroyed += (s, a) => RemoveTextureResourceSet(a.TextureId);
 
             CreateResources();
             _pipelines = new Dictionary<GraphicsState, Pipeline>();
@@ -221,111 +220,6 @@ namespace OpenWheels.Veldrid
             GraphicsDevice.UpdateBuffer(_wvpBuffer, 0, ref wvp);
         }
 
-        private void Grow()
-        {
-            _freeIds.AddRange(Enumerable.Range(_textures.Length, _textures.Length));
-            Array.Resize(ref _textures, _textures.Length * 2);
-            Array.Resize(ref _textureViews, _textureViews.Length * 2);
-            Array.Resize(ref _textureResourceSets, _textureResourceSets.Length * 2);
-        }
-
-        /// <summary>
-        /// Register a texture.
-        /// </summary>
-        /// <param name="texture">The texture to register.</param>
-        /// <returns>The identifier of the texture.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="texture"/> is <c>null</c>.</exception>
-        public int Register(Texture texture)
-        {
-            if (texture == null)
-                throw new ArgumentNullException(nameof(texture));
-
-            if (_freeIds.Count == 0)
-                Grow();
-
-            var id = _freeIds[0];
-            _freeIds.RemoveAt(0);
-            _textures[id] = texture;
-            _textureViews[id] = GraphicsDevice.ResourceFactory.CreateTextureView(texture);
-            _textureResourceSets[id] = GraphicsDevice.ResourceFactory.CreateResourceSet(new ResourceSetDescription(
-                _textureLayout,
-                _textureViews[id]));
-
-            return id;
-        }
-
-        /// <summary>
-        /// Release a registered texture. If no texture with the given name is registered, nothing happens.
-        /// The texture itself is not disposed by this method.
-        /// </summary>
-        /// <param name="id">The id of the texture to release.</param>
-        public void Release(int id)
-        {
-            if (_textures[id] == null)
-                return;
-
-            _textures[id] = null;
-            _textureViews[id].Dispose();
-            _textureViews[id] = null;
-            _textureResourceSets[id].Dispose();
-            _textureResourceSets[id] = null;
-            _freeIds.Insert(~_freeIds.BinarySearch(id), id);
-        }
-
-        /// <inheritdoc />
-        public unsafe int RegisterTexture(Span<Color> pixels, int width, int height)
-        {
-            var factory = GraphicsDevice.ResourceFactory;
-            Texture staging = factory.CreateTexture(
-                TextureDescription.Texture2D((uint) width, (uint) height, 1, 1, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Staging));
-
-            Texture ret = factory.CreateTexture(
-                TextureDescription.Texture2D((uint) width, (uint) height, 1, 1, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Sampled));
-
-            CommandList cl = factory.CreateCommandList();
-            cl.Begin();
-
-            MappedResource map = GraphicsDevice.Map(staging, MapMode.Write, 0);
-            if (width == map.RowPitch / 4)
-            {
-                var dst = new Span<Color>(map.Data.ToPointer(), width * height);
-                pixels.CopyTo(dst);
-            }
-            else
-            {
-                for (var y = 0; y < height; y++)
-                {
-                    var dst = new Span<Color>(IntPtr.Add(map.Data, y * (int) map.RowPitch).ToPointer(), width);
-                    var src = pixels.Slice(y * width, width);
-                    src.CopyTo(dst);
-                }
-            }
-
-            GraphicsDevice.Unmap(staging);
-
-            cl.CopyTexture(staging, ret);
-            cl.End();
-
-            GraphicsDevice.SubmitCommands(cl);
-            GraphicsDevice.DisposeWhenIdle(staging);
-            GraphicsDevice.DisposeWhenIdle(cl);
-
-            return Register(ret);
-        }
-
-        /// <inheritdoc />
-        public Size GetTextureSize(int texture)
-        {
-            var t = _textures[texture];
-            return new Size((int) t.Width, (int) t.Height);
-        }
-
-        /// <inheritdoc />
-        public Rectangle GetViewport()
-        {
-            return new Rectangle(0, 0, (int) _currentTarget.Width, (int) _currentTarget.Height);
-        }
-
         /// <summary>
         /// Clear the background.
         /// </summary>
@@ -373,8 +267,10 @@ namespace OpenWheels.Veldrid
 
             var sampler = GetSamplerResourceSet(state.SamplerState);
 
+            var texSet = GetTextureResourceSet(state.Texture);
+
             _commandList.SetGraphicsResourceSet(0, _wvpSet);
-            _commandList.SetGraphicsResourceSet(1, _textureResourceSets[state.Texture]);
+            _commandList.SetGraphicsResourceSet(1, texSet);
             _commandList.SetGraphicsResourceSet(2, sampler);
 
             // Issue a Draw command for a single instance with 4 indices.
@@ -384,6 +280,45 @@ namespace OpenWheels.Veldrid
                 indexStart: (uint) startIndex,
                 vertexOffset: 0,
                 instanceStart: 0);
+        }
+
+        /// <summary>
+        /// Lazily creates texture resource sets.
+        /// </summary>
+        private ResourceSet GetTextureResourceSet(int id)
+        {
+            var tex = _textureStorage.GetTexture(id);
+            if (id < _textureResourceSets.Length)
+            {
+                GrowResourceSets();
+            }
+
+            if (_textureResourceSets[id] == null)
+            {
+                _textureViews[id] = GraphicsDevice.ResourceFactory.CreateTextureView(tex);
+                _textureResourceSets[id] = GraphicsDevice.ResourceFactory.CreateResourceSet(new ResourceSetDescription(
+                    _textureLayout,
+                    _textureViews[id]));
+            }
+
+            return _textureResourceSets[id];
+        }
+
+        private void GrowResourceSets()
+        {
+            Array.Resize(ref _textureViews, _textureViews.Length * 2);
+            Array.Resize(ref _textureResourceSets, _textureResourceSets.Length * 2);
+        }
+
+        private void RemoveTextureResourceSet(int id)
+        {
+            if (id < _textureResourceSets.Length && _textureResourceSets[id] != null)
+            {
+                _textureViews[id].Dispose();
+                _textureViews[id] = null;
+                _textureResourceSets[id].Dispose();
+                _textureResourceSets[id] = null;
+            }
         }
 
         private ResourceSet GetSamplerResourceSet(SamplerState samplerState)
