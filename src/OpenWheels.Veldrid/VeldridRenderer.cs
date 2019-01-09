@@ -74,15 +74,6 @@ namespace OpenWheels.Veldrid
         {
             var rf = GraphicsDevice.ResourceFactory;
 
-            var vbDescription = new BufferDescription(
-                Batcher.InitialMaxVertices * Vertex.SizeInBytes,
-                BufferUsage.VertexBuffer);
-            _vertexBuffer = rf.CreateBuffer(ref vbDescription);
-            var ibDescription = new BufferDescription(
-                Batcher.InitialMaxIndices * sizeof(int),
-                BufferUsage.IndexBuffer);
-            _indexBuffer = rf.CreateBuffer(ref ibDescription);
-
             _commandList = rf.CreateCommandList();
 
             var vertexLayout = new VertexLayoutDescription(
@@ -245,6 +236,9 @@ namespace OpenWheels.Veldrid
             if (_disposed)
                 throw new ObjectDisposedException("Can't use renderer after it has been disposed.");
 
+            EnsureVertexBufferSize(vertexBuffer.Length);
+            EnsureIndexBufferSize(indexBuffer.Length);
+
             GraphicsDevice.UpdateBuffer(_vertexBuffer, 0, ref vertexBuffer[0], (uint) (vertexCount * Vertex.SizeInBytes));
             GraphicsDevice.UpdateBuffer(_indexBuffer, 0, ref indexBuffer[0], (uint) (indexCount * sizeof(int)));
 
@@ -255,6 +249,27 @@ namespace OpenWheels.Veldrid
 
             _commandList.SetVertexBuffer(0, _vertexBuffer);
             _commandList.SetIndexBuffer(_indexBuffer, IndexFormat.UInt32);
+        }
+
+        private void EnsureVertexBufferSize(int vertexCount)
+            => EnsureBufferSize(ref _vertexBuffer, (uint)vertexCount * Vertex.SizeInBytes, BufferUsage.VertexBuffer);
+
+        private void EnsureIndexBufferSize(int indexCount)
+            => EnsureBufferSize(ref _indexBuffer, (uint)indexCount * sizeof(int), BufferUsage.IndexBuffer);
+
+        private void EnsureBufferSize(ref DeviceBuffer buffer, uint requiredSize, BufferUsage usage)
+        {
+            if (buffer != null && buffer.SizeInBytes < requiredSize)
+            {
+                GraphicsDevice.DisposeWhenIdle(buffer);
+                buffer = null;
+            }
+
+            if (buffer == null)
+            {
+                var descr = new BufferDescription(requiredSize, usage);
+                buffer = GraphicsDevice.ResourceFactory.CreateBuffer(ref descr);
+            }
         }
 
         /// <inheritdoc />
