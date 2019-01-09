@@ -40,8 +40,7 @@ namespace OpenWheels.Rendering
         /// <param name="blendState">Blend state.</param>
         /// <param name="samplerState">Sampler state.</param>
         /// <param name="scissorRect">Scissor rectangle. <see cref="Rectangle.Empty"/> means no scissor rectangle is set.</param>
-        public GraphicsState(int texture, BlendState blendState,
-            SamplerState samplerState, Rectangle scissorRect)
+        public GraphicsState(int texture, BlendState blendState, SamplerState samplerState, Rectangle scissorRect)
         {
             Texture = texture;
             BlendState = blendState;

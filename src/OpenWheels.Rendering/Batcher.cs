@@ -8,7 +8,7 @@ namespace OpenWheels.Rendering
     /// <summary>
     /// <p>
     ///   A platform-agnostic renderer that batches draw operations.
-    ///   Uses the primitive drawing operation of a <see cref="IRenderer"/> to abstract the graphics back end.
+    ///   Exports instances of <see cref="BatchInfo"/> to abstract the graphics back end.
     ///   Provides operations to draw basic shape outlines or fill basic shapes.
     /// </p>
     /// <p>
@@ -41,22 +41,6 @@ namespace OpenWheels.Rendering
     //       order in favor of using a depth value (which is currently not even supported).
     public class Batcher
     {
-        private class BatchInfo
-        {
-            public readonly GraphicsState GraphicsState;
-            public readonly int Startindex;
-            public readonly int IndexCount;
-            public readonly object UserData;
-
-            public BatchInfo(GraphicsState graphicsState, int startindex, int indexCount, object userData)
-            {
-                GraphicsState = graphicsState;
-                Startindex = startindex;
-                IndexCount = indexCount;
-                UserData = userData;
-            }
-        }
-
         /// <summary>
         /// The initial number of vertices this batcher can hold. The batcher will grow its buffer if needed.
         /// </summary>
@@ -79,20 +63,6 @@ namespace OpenWheels.Rendering
         /// </summary>
         public const int MinIndexInc = 512;
 
-        /// <summary>
-        /// The renderer that actually executes the draw calls.
-        /// </summary>
-        public IRenderer Renderer
-        {
-            get => _renderer;
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-                _renderer = value;
-            }
-        }
-
         private Vertex[] _vb;
         private int[] _ib;
 
@@ -100,9 +70,24 @@ namespace OpenWheels.Rendering
         private int _indicesInBatch;
 
         /// <summary>
+        /// The texture storage used by the batcher.
+        /// </summary>
+        public ITextureStorage TextureStorage { get; }
+
+        /// <summary>
+        /// The vertex buffer used to batch vertices.
+        /// </summary>
+        public Vertex[] VertexBuffer => _vb;
+
+        /// <summary>
         /// The size of the vertex buffer. Initialized to <see cref="InitialMaxVertices"/>.
         /// </summary>
         public int VertexBufferSize => _vb.Length;
+
+        /// <summary>
+        /// The index buffer.
+        /// </summary>
+        public int[] IndexBuffer => _ib;
 
         /// <summary>
         /// The size of the index buffer. Initialized to <see cref="InitialMaxIndices"/>.
@@ -120,11 +105,11 @@ namespace OpenWheels.Rendering
         public int VerticesSubmitted { get; private set; }
 
         private readonly List<BatchInfo> _batches;
+        private bool _finished;
         private Sprite _sprite;
         private TextureFont _font;
         private RectangleF _spriteUv;
         private bool _useSpriteUv;
-        private IRenderer _renderer;
         private BlendState _blendState;
         private SamplerState _samplerState;
         private Rectangle _scissorRect;
@@ -175,7 +160,7 @@ namespace OpenWheels.Rendering
                 if (value.Texture != Sprite.Texture)
                     Flush();
                 _sprite = value;
-                var texSize = Renderer.GetTextureSize(_sprite.Texture);
+                var texSize = TextureStorage.GetTextureSize(_sprite.Texture);
                 if (texSize == _sprite.SrcRect.Size)
                 {
                     _spriteUv = RectangleF.Unit;
@@ -258,7 +243,8 @@ namespace OpenWheels.Rendering
         public int BatchCount { get; private set; }
 
         /// <summary>
-        /// The value of this property is attached to a batch when it is finished.
+        /// The value of this property is attached to a batch when it is finished
+        /// through the <see cref="BatchInfo.UserData"/> property.
         /// Can be used for custom rendering in combination with <see cref="Flush"/>
         /// to force finishing a batch when graphics state unknown to <see cref="Batcher"/>
         /// needs to be changed.
@@ -273,20 +259,25 @@ namespace OpenWheels.Rendering
         public static readonly Sprite BlankSprite = new Sprite(0, Rectangle.Unit);
 
         /// <summary>
-        /// Create a <see cref="Batcher"/> with a <see cref="NullRenderer"/>.
+        /// Create a <see cref="Batcher"/> with a <see cref="NullTextureStorage"/>.
         /// </summary>
-        public Batcher()
-            : this(NullRenderer.Instance)
+        /// <remarks>
+        /// Using a <see cref="NullTextureStorage"/> can be useful when using
+        /// <see cref="DebugRenderer"/> or a similar renderer for debugging purposes.
+        ///
+        /// It can also be used for a renderer that does use handle textures.
+        /// </remarks>
+        public Batcher() : this(NullTextureStorage.Instance)
         {
         }
 
         /// <summary>
-        /// Create a batcher with a renderer.
+        /// Create a batcher with a texture storage.
         /// </summary>
-        /// <param name="renderer">Renderer to execute draw calls.</param>
-        public Batcher(IRenderer renderer)
+        /// <param name="textureStorage">Renderer to execute draw calls.</param>
+        public Batcher(ITextureStorage textureStorage)
         {
-            Renderer = renderer;
+            TextureStorage = textureStorage;
 
             _vb = new Vertex[InitialMaxVertices];
             _ib = new int[InitialMaxIndices];
@@ -296,34 +287,15 @@ namespace OpenWheels.Rendering
             PositionTransform = Matrix3x2.Identity;
         }
 
-        #region Register Texture
-
-        /// <summary>
-        /// Register a texture given the image data and its dimensions.
-        /// </summary>
-        /// <param name="pixels">Span of the image data in row-major order.</param>
-        /// <param name="width">Width of the texture in pixels.</param>
-        /// <param name="height">Height of the texture in pixels.</param>
-        /// <returns>The texture identifier after registration.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="pixels" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentException">If <paramref name="width" /> is zero or negative.</exception>
-        /// <exception cref="ArgumentException">If <paramref name="height" /> is zero or negative.</exception>
-        public int RegisterTexture(Span<Color> pixels, int width, int height)
-        {
-            return Renderer.RegisterTexture(pixels, width, height);
-        }
-
-        #endregion
-
         #region Set State
 
         /// <summary>
         /// Set <see cref="PositionTransform"/> so vertex coordinates are mapped from viewport pixel space to
         /// the [-1, 1] range.
         /// </summary>
-        public void SetMatrix2D()
+        public void SetMatrix2D(Size size)
         {
-            SetMatrix2D(Vector2.Zero);
+            SetMatrix2D(Vector2.Zero, size);
         }
 
         /// <summary>
@@ -334,14 +306,13 @@ namespace OpenWheels.Rendering
         ///   Coordinates in the viewport that map to [-1, -1] in pixels.
         ///   Defaults to <see cref="Vector2.Zero"/>.
         /// </param>
-        public void SetMatrix2D(Vector2 origin)
+        public void SetMatrix2D(Vector2 origin, Size size)
         {
-            var vp = Renderer.GetViewport();
             var mat = new Matrix3x2();
-            mat.M11 = 2f / vp.Width;
-            mat.M22 = 2f / vp.Height;
-            mat.M31 = -2 * (vp.X + origin.X) / vp.Width + 1;
-            mat.M32 = -2 * (vp.Y + origin.Y) / vp.Height + 1;
+            mat.M11 = 2f / size.Width;
+            mat.M22 = 2f / size.Height;
+            mat.M31 = -2 * origin.X / size.Width + 1;
+            mat.M32 = -2 * origin.Y / size.Height + 1;
 
             PositionTransform = mat;
         }
@@ -352,7 +323,7 @@ namespace OpenWheels.Rendering
         /// <param name="texture">Texture identifier.</param>
         public void SetTexture(int texture)
         {
-            var size = Renderer.GetTextureSize(texture);
+            var size = TextureStorage.GetTextureSize(texture);
             Sprite = new Sprite(texture, new Rectangle(0, 0, size.Width, size.Height));
         }
 
@@ -1017,7 +988,7 @@ namespace OpenWheels.Rendering
         #region Management
 
         /// <summary>
-        /// Remove all unflushed batches.
+        /// Remove all flushed batches.
         /// </summary>
         public void Clear()
         {
@@ -1035,22 +1006,23 @@ namespace OpenWheels.Rendering
         public void Start()
         {
             Clear();
+            _finished = false;
         }
 
         /// <summary>
-        /// Call this to finish a set of batches and let the <see cref="Renderer"/> draw them.
+        /// Call this to finish a set of batches.
         /// </summary>
-        public void Finish()
+        /// <returns>The batches created since the last call to <see cref="Start"/> or <see cref="Clear"/>.
+        public IEnumerable<BatchInfo> Finish()
         {
+            if (_finished)
+                return _batches;
+
+            _finished = true;
+
             // register last batch if necessary
             Flush();
-
-            Renderer.BeginRender(_vb, _ib, VerticesSubmitted, IndicesSubmitted);
-
-            foreach (var batch in _batches)
-                Renderer.DrawBatch(batch.GraphicsState, batch.Startindex, batch.IndexCount, batch.UserData);
-
-            Renderer.EndRender();
+            return _batches;
         }
 
         /// <summary>
@@ -1058,12 +1030,11 @@ namespace OpenWheels.Rendering
         /// </summary>
         public void Flush()
         {
-            var gs = CreateCurrentGraphicsState();
-
             // if nothing to flush
             if (_indicesInBatch == 0 && BatchData == null)
                 return;
 
+            var gs = new GraphicsState(Sprite.Texture, BlendState, SamplerState, ScissorRect);
             var bi = new BatchInfo(gs, _nextToDraw, _indicesInBatch, BatchData);
             _batches.Add(bi);
 
@@ -1130,11 +1101,6 @@ namespace OpenWheels.Rendering
             var i = _nextToDraw + _indicesInBatch;
             _ib[i] = index;
             _indicesInBatch++;
-        }
-
-        private GraphicsState CreateCurrentGraphicsState()
-        {
-            return new GraphicsState(Sprite.Texture, BlendState, SamplerState, ScissorRect);
         }
 
         private void CreateLine(Vector2 p1, Vector2 p2, Color color, float lineWidth, in RectangleF ur, out Vertex v1, out Vertex v2, out Vertex v3, out Vertex v4)

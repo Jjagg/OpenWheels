@@ -12,31 +12,6 @@ namespace OpenWheels.Rendering
     public interface IRenderer
     {
         /// <summary>
-        /// Register a texture given the image data and its dimensions.
-        /// </summary>
-        /// <param name="pixels">Span of the image data in row-major order.</param>
-        /// <param name="width">Width of the texture in pixels.</param>
-        /// <param name="height">Height of the texture in pixels.</param>
-        /// <returns>The texture identifier after registration.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="pixels" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentException">If <paramref name="width" /> is zero or negative.</exception>
-        /// <exception cref="ArgumentException">If <paramref name="height" /> is zero or negative.</exception>
-        int RegisterTexture(Span<Color> pixels, int width, int height);
-
-        /// <summary>
-        /// Get the size of a texture.
-        /// </summary>
-        /// <param name="texture">The identifier of the texture.</param>
-        /// <returns>The size of the texture in pixels.</returns>
-        Size GetTextureSize(int texture);
-
-        /// <summary>
-        /// Get the current viewport of the renderer.
-        /// </summary>
-        /// <returns>Bounds of the viewport.</returns>
-        Rectangle GetViewport();
-
-        /// <summary>
         /// Called right before calls to <see cref="DrawBatch"/> to indicate that batches will be drawn.
         /// </summary>
         void BeginRender(Vertex[] vertexBuffer, int[] indexBuffer, int vertexCount, int indexCount);
@@ -59,12 +34,6 @@ namespace OpenWheels.Rendering
     {
         private NullRenderer() { }
 
-        /// <inheritdoc />
-        public int RegisterTexture(Span<Color> img, int width, int height) { return -1; }
-        /// <inheritdoc />
-        public Size GetTextureSize(int texture) => Size.Empty;
-        /// <inheritdoc />
-        public Rectangle GetViewport() => Rectangle.Empty;
         /// <inheritdoc />
         public void BeginRender(Vertex[] vertexBuffer, int[] indexBuffer, int vertexCount, int indexCount) { }
         /// <inheritdoc />
@@ -130,27 +99,6 @@ namespace OpenWheels.Rendering
                     pre = Prefix();
                 Writer.WriteLine(pre + message);
             }
-        }
-
-        /// <inheritdoc />
-        public int RegisterTexture(Span<Color> img, int width, int height)
-        {
-            Write($"RegisterTexture(<pixels>, ${width}, ${height})");
-            return DelegateRenderer.RegisterTexture(img, width, height);
-        }
-
-        /// <inheritdoc />
-        public Size GetTextureSize(int texture)
-        {
-            Write($"GetTextureSize(${texture})");
-            return DelegateRenderer.GetTextureSize(texture);
-        }
-
-        /// <inheritdoc />
-        public Rectangle GetViewport()
-        {
-            Write("GetViewport()");
-            return DelegateRenderer.GetViewport();
         }
 
         /// <inheritdoc />

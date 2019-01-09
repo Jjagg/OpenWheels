@@ -3,7 +3,7 @@
     /// <summary>
     /// Commonly supported sampler states for sampling from textures.
     /// </summary>
-    public enum SamplerState
+    public enum SamplerState : byte
     {
         /// <summary>
         /// Linear filtering and texture coordinate clamping.
