@@ -981,7 +981,7 @@ namespace OpenWheels.Rendering
             if (_indicesInBatch == 0 && BatchData == null)
                 return;
 
-            var gs = new GraphicsState(Sprite.Texture, BlendState, SamplerState, ScissorRect);
+            var gs = new GraphicsState(Sprite.Texture, SamplerState, ScissorRect);
             var bi = new BatchInfo(gs, _nextToDraw, _indicesInBatch, BatchData);
             _batches.Add(bi);
 

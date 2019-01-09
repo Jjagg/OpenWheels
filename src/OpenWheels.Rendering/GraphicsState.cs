@@ -13,11 +13,6 @@ namespace OpenWheels.Rendering
         public readonly int Texture;
 
         /// <summary>
-        /// Blend state to apply.
-        /// </summary>
-        public readonly BlendState BlendState;
-
-        /// <summary>
         /// Sampler state to apply.
         /// </summary>
         public readonly SamplerState SamplerState;
@@ -37,20 +32,18 @@ namespace OpenWheels.Rendering
         /// Create a new <see cref="GraphicsState"/> instance.
         /// </summary>
         /// <param name="texture">Id of the texture to render.</param>
-        /// <param name="blendState">Blend state.</param>
         /// <param name="samplerState">Sampler state.</param>
         /// <param name="scissorRect">Scissor rectangle. <see cref="Rectangle.Empty"/> means no scissor rectangle is set.</param>
-        public GraphicsState(int texture, BlendState blendState, SamplerState samplerState, Rectangle scissorRect)
+        public GraphicsState(int texture, SamplerState samplerState, Rectangle scissorRect)
         {
             Texture = texture;
-            BlendState = blendState;
             SamplerState = samplerState;
             ScissorRect = scissorRect;
         }
 
         public bool Equals(GraphicsState other)
         {
-            return Texture == other.Texture && BlendState == other.BlendState && SamplerState == other.SamplerState && ScissorRect.Equals(other.ScissorRect);
+            return Texture == other.Texture && SamplerState == other.SamplerState && ScissorRect.Equals(other.ScissorRect);
         }
 
         public override bool Equals(object obj)
@@ -64,7 +57,6 @@ namespace OpenWheels.Rendering
             unchecked
             {
                 var hashCode = Texture;
-                hashCode = (hashCode * 397) ^ (int) BlendState;
                 hashCode = (hashCode * 397) ^ (int) SamplerState;
                 hashCode = (hashCode * 397) ^ ScissorRect.GetHashCode();
                 return hashCode;
@@ -84,6 +76,6 @@ namespace OpenWheels.Rendering
         /// <summary>
         /// Get the default <see cref="GraphicsState"/>.
         /// </summary>
-        public static GraphicsState Default => new GraphicsState(-1, 0, 0, Rectangle.Empty);
+        public static GraphicsState Default => new GraphicsState(-1,  0, Rectangle.Empty);
     }
 }

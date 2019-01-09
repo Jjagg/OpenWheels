@@ -336,11 +336,8 @@ namespace OpenWheels.Veldrid
 
         private Pipeline AddPipeline(GraphicsState state)
         {
-            var bds = state.BlendState == BlendState.AlphaBlend
-                ? BlendStateDescription.SingleAlphaBlend
-                : BlendStateDescription.SingleOverrideBlend;
             var gpd = new GraphicsPipelineDescription();
-            gpd.BlendState = bds;
+            gpd.BlendState = BlendStateDescription.SingleAlphaBlend;
             gpd.DepthStencilState = DepthStencilStateDescription.Disabled;
             gpd.RasterizerState = new RasterizerStateDescription(FaceCullMode.None, PolygonFillMode.Solid,
                 FrontFace.Clockwise, true, state.UseScissorRect);
