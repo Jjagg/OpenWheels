@@ -8,6 +8,7 @@ namespace OpenWheels.Rendering
     /// Note that clients do not have to use a renderer directly, unless they need custom rendering
     /// functionality (using <see cref="Batcher.BatchData" />) or additional functionality not supported
     /// by <see cref="Batcher" />.
+    /// Implementations are expected to use alpha blending and enable depth read/write if they support it.
     /// </summary>
     public interface IRenderer
     {

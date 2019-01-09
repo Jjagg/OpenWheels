@@ -14,9 +14,8 @@ namespace OpenWheels.Rendering
     ///   <see cref="Batcher"/>, like the name implies, attempts to batch as many sequential drawing operations
     ///   as possible. Operations can be batched as long as you do not change the graphics state, the texture
     ///   or the scissor rectangle. The Batcher API is stateful. All graphics state is set in between draw calls.
-    ///   You can change the graphics state by setting the properties <see cref="BlendState"/> and
-    ///   <see cref="SamplerState"/>. You can set the texture by calling <see cref="SetTexture(int)"/> or
-    ///   <see cref="SetSprite"/>. <seealso cref="Sprite"/>
+    ///   You can change the sampler state by setting the <see cref="SamplerState"/> property. You can set the
+    ///   texture by calling <see cref="SetTexture(int)"/> or <see cref="SetSprite"/>. <seealso cref="Sprite"/>
     ///   Note that setting a sprite from the same texture will not finish a batch, since this just requires
     ///   to compute UV coordinates differently.
     /// </p>
@@ -111,7 +110,6 @@ namespace OpenWheels.Rendering
         private bool _useSpriteUv;
         private BlendState _blendState;
         private SamplerState _samplerState;
-        private Rectangle _scissorRect;
         private Matrix3x2 _positionTransform;
         private Matrix3x2 _uvTransform;
         private bool _usePosMatrix;
@@ -119,6 +117,8 @@ namespace OpenWheels.Rendering
 
         /// <summary>
         /// Get or set the z coordinate used for all vertices.
+        /// This can be used for clipping purposes as renderers are expected to have depth
+        /// testing enabled (see <see cref="IRenderer"/>).
         /// </summary>
         public float PositionZ { get; set; }
 
@@ -202,20 +202,6 @@ namespace OpenWheels.Rendering
                 if (_samplerState != value)
                     Flush();
                 _samplerState = value;
-            }
-        }
-
-        /// <summary>
-        /// Get or set the scissor rectangle. Setting the scissor rectangle automatically enables it.
-        /// </summary>
-        public Rectangle ScissorRect
-        {
-            get => _scissorRect;
-            set
-            {
-                if (_scissorRect != value)
-                    Flush();
-                _scissorRect = value;
             }
         }
 
@@ -325,14 +311,6 @@ namespace OpenWheels.Rendering
         public void SetSprite(int texture, in Rectangle srcRect)
         {
             Sprite = new Sprite(texture, srcRect);
-        }
-
-        /// <summary>
-        /// Disable scissor rectangle usage (i.e. clipping).
-        /// </summary>
-        public void DisableScissorRect()
-        {
-            ScissorRect = Rectangle.Empty;
         }
 
         #endregion
@@ -981,7 +959,7 @@ namespace OpenWheels.Rendering
             if (_indicesInBatch == 0 && BatchData == null)
                 return;
 
-            var gs = new GraphicsState(Sprite.Texture, SamplerState, ScissorRect);
+            var gs = new GraphicsState(Sprite.Texture, SamplerState);
             var bi = new BatchInfo(gs, _nextToDraw, _indicesInBatch, BatchData);
             _batches.Add(bi);
 

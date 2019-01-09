@@ -340,7 +340,7 @@ namespace OpenWheels.Veldrid
             gpd.BlendState = BlendStateDescription.SingleAlphaBlend;
             gpd.DepthStencilState = DepthStencilStateDescription.Disabled;
             gpd.RasterizerState = new RasterizerStateDescription(FaceCullMode.None, PolygonFillMode.Solid,
-                FrontFace.Clockwise, true, state.UseScissorRect);
+                FrontFace.Clockwise, true, false);
             gpd.PrimitiveTopology = PrimitiveTopology.TriangleList;
             gpd.ShaderSet = _shaderSet;
             gpd.ResourceLayouts = _resourceLayouts;
