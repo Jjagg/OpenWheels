@@ -10,11 +10,29 @@ using Veldrid;
 
 namespace OpenWheels.Veldrid
 {
+
     /// <summary>
     /// <see cref="IRenderer"/> implementation that uses Veldrid to render.
     /// </summary>
     public class VeldridRenderer : IRenderer, IDisposable
     {
+        private struct PipelineKey : IEquatable<PipelineKey>
+        {
+            public OutputDescription OutputDescription;
+            public GraphicsState GraphicsState;
+
+            public PipelineKey(OutputDescription outputDescription, GraphicsState graphicsState)
+            {
+                OutputDescription = outputDescription;
+                GraphicsState = graphicsState;
+            }
+
+            public bool Equals(PipelineKey other)
+            {
+                return OutputDescription.Equals(other.OutputDescription) && GraphicsState.Equals(other.GraphicsState);
+            }
+        }
+
         public GraphicsDevice GraphicsDevice { get; }
 
         private TextureStorage<Texture> _textureStorage;
@@ -40,7 +58,7 @@ namespace OpenWheels.Veldrid
         private ResourceSet _wvpSet;
         private DeviceBuffer _wvpBuffer;
 
-        private Dictionary<GraphicsState, Pipeline> _pipelines;
+        private Dictionary<PipelineKey, Pipeline> _pipelines;
 
         private bool _disposed;
 
@@ -59,15 +77,15 @@ namespace OpenWheels.Veldrid
             GraphicsDevice = graphicsDevice;
             _currentTarget = GraphicsDevice.SwapchainFramebuffer;
 
+            CreateResources();
+
+            _pipelines = new Dictionary<PipelineKey, Pipeline>();
             _textureStorage = textureStorage;
             _textureViews = new TextureView[textureStorage.TextureCount];
             _textureResourceSets = new ResourceSet[textureStorage.TextureCount];
             // We lazily create and cache texture views and resource sets when required.
             // When a texture is destroyed the matching cached values are destroyed as well.
             _textureStorage.TextureDestroyed += (s, a) => RemoveTextureResourceSet(a.TextureId);
-
-            CreateResources();
-            _pipelines = new Dictionary<GraphicsState, Pipeline>();
         }
 
         private void CreateResources()
@@ -275,8 +293,9 @@ namespace OpenWheels.Veldrid
         /// <inheritdoc />
         public void DrawBatch(GraphicsState state, int startIndex, int indexCount, object batchUserData)
         {
-            if (!_pipelines.TryGetValue(state, out var pipeline))
-                pipeline = AddPipeline(state);
+            var pipelineKey = new PipelineKey(_currentTarget.OutputDescription, state);
+            if (!_pipelines.TryGetValue(pipelineKey, out var pipeline))
+                pipeline = AddPipeline(in pipelineKey);
 
             _commandList.SetPipeline(pipeline);
 
@@ -349,7 +368,7 @@ namespace OpenWheels.Veldrid
             GraphicsDevice.SubmitCommands(_commandList);
         }
 
-        private Pipeline AddPipeline(GraphicsState state)
+        private Pipeline AddPipeline(in PipelineKey key)
         {
             var gpd = new GraphicsPipelineDescription();
             gpd.BlendState = BlendStateDescription.SingleAlphaBlend;
@@ -359,9 +378,9 @@ namespace OpenWheels.Veldrid
             gpd.PrimitiveTopology = PrimitiveTopology.TriangleList;
             gpd.ShaderSet = _shaderSet;
             gpd.ResourceLayouts = _resourceLayouts;
-            gpd.Outputs = _currentTarget.OutputDescription;
+            gpd.Outputs = key.OutputDescription;
             var pipeline = GraphicsDevice.ResourceFactory.CreateGraphicsPipeline(gpd);
-            _pipelines[state] = pipeline;
+            _pipelines[key] = pipeline;
             return pipeline;
         }
 
