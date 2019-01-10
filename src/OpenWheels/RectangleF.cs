@@ -232,6 +232,16 @@ namespace OpenWheels
             return new RectangleF(center - halfExtents, halfExtents * 2);
         }
 
+        /// <summary>
+        /// Create a rectangle.
+        /// </summary>
+        /// <param name="center">Center of the rectangle.</param>
+        /// <param name="extents">Size of the rectangle.</param>
+        public static RectangleF FromExtents(Vector2 center, Vector2 extents)
+        {
+            return new RectangleF(center - extents / 2, extents);
+        }
+
         public static implicit operator RectangleF(Rectangle rect)
         {
             return new RectangleF(rect.X, rect.Y, rect.Width, rect.Height);

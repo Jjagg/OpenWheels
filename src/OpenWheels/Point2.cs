@@ -88,12 +88,23 @@ namespace OpenWheels
         /// <param name="p">Point to scale.</param>
         /// <param name="s">Factor to scale by.</param>
         /// <returns><code>new Point2(s * p.X, s * p.Y)</code></returns>
-        public static Point2 operator *(Point2 p,int s)
+        public static Point2 operator *(Point2 p, int s)
         {
             return new Point2(s * p.X, s * p.Y);
         }
 
-        public void Deconstruct(out int x, out int y)
+        /// <summary>
+        /// Divide a points components by a scalar value.
+        /// </summary>
+        /// <param name="p">Point to scale.</param>
+        /// <param name="d">Divisor.</param>
+        /// <returns><code>new Point2(p.X / d, p.Y / d)</code></returns>
+        public static Point2 operator /(Point2 p, int d)
+        {
+            return new Point2(p.X / d, p.Y / d);
+        }
+
+       public void Deconstruct(out int x, out int y)
         {
             x = X;
             y = Y;

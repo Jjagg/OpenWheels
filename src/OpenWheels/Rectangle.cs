@@ -254,6 +254,16 @@ namespace OpenWheels
             return new Rectangle(center - halfExtents, halfExtents * 2);
         }
 
+        /// <summary>
+        /// Create a rectangle.
+        /// </summary>
+        /// <param name="center">Center of the rectangle.</param>
+        /// <param name="extents">Size of the rectangle.</param>
+        public static Rectangle FromExtents(Point2 center, Point2 extents)
+        {
+            return new Rectangle(center - extents / 2, extents);
+        }
+
         public void Deconstruct(out int x, out int y, out int width, out int height)
         {
             x = X;
