@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/OpenWheels.Veldrid/OpenWheels.Veldrid.csproj" />
+    <ProjectReference Include="../../src/OpenWheels.Rendering.ImageSharp/OpenWheels.Rendering.ImageSharp.csproj" />
+    <ProjectReference Include="../../src/OpenWheels.Fonts.ImageSharp/OpenWheels.Fonts.ImageSharp.csproj" />
+
+    <PackageReference Include="Veldrid.ImageSharp" Version="$(VeldridVersion)" />
+    <PackageReference Include="Veldrid.SDL2" Version="$(VeldridVersion)" />
+    <PackageReference Include="Veldrid.StartupUtilities" Version="$(VeldridVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+      <None Include="Resource/*.ttf">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+  </ItemGroup>
+</Project>
