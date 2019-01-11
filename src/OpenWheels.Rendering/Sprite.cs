@@ -1,7 +1,7 @@
 ﻿namespace OpenWheels.Rendering
 {
     /// <summary>
-    /// A sprite value type, represented with a texture identifier and a source rectangle (in pixels) into the texture.
+    /// A sprite value type, represented with a texture identifier and a source rectangle (in pixels) in the texture.
     /// </summary>
     public struct Sprite
     {
@@ -27,11 +27,6 @@
         }
         
         public override string ToString()
-        {
-            var t = $"{nameof(Texture)}: {Texture}";
-            if (SrcRect != Rectangle.Unit)
-                t = t + $", {nameof(SrcRect)}: {SrcRect}";
-            return t;
-        }
+            => $"{nameof(Texture)}: {Texture}, {nameof(SrcRect)}: {SrcRect}";
     }
 }

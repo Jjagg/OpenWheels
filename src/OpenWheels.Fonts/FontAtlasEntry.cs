@@ -51,10 +51,13 @@ namespace OpenWheels.Fonts
         public void AddCharacterRanges(IEnumerable<Range<int>> ranges)
         {
             CharacterRanges.AddRange(ranges);
-            FixCharacterRanges();
+            NormalizeCharacterRanges();
         }
 
-        private void FixCharacterRanges()
+        /// <summary>
+        /// Sort character ranges and merge overlapping ranges.
+        /// </summary>
+        private void NormalizeCharacterRanges()
         {
             if (CharacterRanges.Count == 0)
                 return;

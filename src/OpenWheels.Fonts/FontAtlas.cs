@@ -59,18 +59,28 @@ namespace OpenWheels.Fonts
         public GlyphMap this[FontData fontData] => _glyphMaps.First(g => FontMatchesFontData(g.Font, fontData));
 
         /// <summary>
-        /// Find a <see cref="GlyphMap"/> matching the given <paramref name="fontData"/>.
+        /// Find a <see cref="GlyphMap"/> exactly matching the given <paramref name="fontData"/>.
         /// </summary>
         /// <param name="fontData">The font data to get the glyph map for.</param>
         /// <param name="glyphMap">The retrieved glyph map if the font data is found, <c>null</c> if it isn't.</param>
         /// <returns><c>true</c> if the font data is found, <c>false</c> if it isn't.</returns>
-        public bool TryGetGlyphMap(FontData fontData, out GlyphMap glyphMap)
+        public bool TryGetGlyphMap(in FontData fontData, out GlyphMap glyphMap)
         {
-            glyphMap = _glyphMaps.FirstOrDefault(g => FontMatchesFontData(g.Font, fontData));
+            glyphMap = null;
+            for (var i = 0; i < _glyphMaps.Length; i++)
+            {
+                var gm = _glyphMaps[i];
+                if (FontMatchesFontData(gm.Font, fontData))
+                {
+                    glyphMap = gm;
+                    break;
+                }
+            }
+
             return glyphMap != null;
         }
 
-        private bool FontMatchesFontData(Font font, FontData fd)
+        private bool FontMatchesFontData(Font font, in FontData fd)
         {
             var style = (font.Bold ? FontStyle.Bold : 0) | (font.Italic ? FontStyle.Italic: 0);
             return font.Family.Name == fd.FamilyName && font.Size == fd.Size && style == fd.Style;

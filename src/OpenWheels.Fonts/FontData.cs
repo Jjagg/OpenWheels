@@ -6,7 +6,7 @@ namespace OpenWheels.Fonts
     /// <summary>
     /// Contains information on a specific font.
     /// </summary>
-    public class FontData : IEquatable<FontData>
+    public struct FontData : IEquatable<FontData>
     {
         /// <summary>
         /// Name of the family of the font.

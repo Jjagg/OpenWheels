@@ -9,6 +9,7 @@
         /// UTF-32 encoded character of the glyph.
         /// </summary>
         public int Character { get; }
+        // TODO support glyphs more than 1 codepoint
 
         /// <summary>
         /// Bounds of the glyph on the texture atlas in pixels.

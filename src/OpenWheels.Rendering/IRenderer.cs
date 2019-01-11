@@ -45,7 +45,7 @@ namespace OpenWheels.Rendering
         /// <summary>
         /// The singleton instance of the <see cref="NullRenderer" />.
         /// </summary>
-        public static NullRenderer Instance = new NullRenderer();
+        public static NullRenderer Instance { get; } = new NullRenderer();
     }
 
     /// <summary>

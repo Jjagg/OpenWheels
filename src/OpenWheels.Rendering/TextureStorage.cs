@@ -11,15 +11,19 @@ namespace OpenWheels.Rendering
         /// <inheritdoc />
         public abstract int TextureCount { get; }
         /// <inheritdoc />
-        public abstract int CreateTexture(int width, int height);
+        public abstract int CreateTexture(int width, int height, TextureFormat format);
         /// <inheritdoc />
         public abstract void DestroyTexture(int id);
         /// <inheritdoc />
+        public abstract bool HasTexture(int id);
+        /// <inheritdoc />
         public abstract Size GetTextureSize(int id);
         /// <inheritdoc />
-        public abstract void SetData(int id, Span<Color> data);
+        public abstract TextureFormat GetTextureFormat(int id);
         /// <inheritdoc />
-        public abstract void SetData(int id, in Rectangle subRect, Span<Color> data);
+        public abstract void SetData(int id, ReadOnlySpan<byte> data);
+        /// <inheritdoc />
+        public abstract void SetData(int id, in Rectangle subRect, ReadOnlySpan<byte> data);
 
         /// <summary>
         /// Get the native texture with the matching id.

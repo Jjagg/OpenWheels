@@ -56,33 +56,27 @@ namespace OpenWheels.Fonts
         /// Get the glyph data for the given character.
         /// </summary>
         /// <param name="character">UTF-32 encoded character to get glyph data for.</param>
-        /// <exception cref="ArgumentOutOfRangeException">If the character is not in this glyph map.</exception>
         /// <returns>The glyph data for the given character.</returns>
-        public ref readonly GlyphData this[int character]
+        /// <exception cref="ArgumentOutOfRangeException">If the character is not in this glyph map.</exception>
+        public ref readonly GlyphData GetGlyphData(int character)
         {
-            get
-            {
-                var rangeIndex = FindCharacterIndex(character);
-                if (rangeIndex == -1)
-                    throw new ArgumentOutOfRangeException(nameof(character), $"Character '{character} ({char.ConvertFromUtf32(character)})' not found in glyph map.");
+            ref readonly var gd = ref GetGlyphData(character, GlyphData.Default);
+            if (gd.Character != character)
+                throw new ArgumentOutOfRangeException(nameof(character), $"Character '{character} ({char.ConvertFromUtf32(character)})' not found in glyph map.");
 
-                var index = _characterRanges[rangeIndex].GetIndex(character);
-                return ref _glyphData[index];
-            }
+            return ref gd;
         }
 
         /// <summary>
-        /// Get the glyph data for the given character. Returns the fallback character
-        /// if the given character is not present in this glyph map.
+        /// Get the glyph data for the given character.
         /// </summary>
         /// <param name="character">UTF-32 encoded character to get glyph data for.</param>
-        /// <returns>
-        ///   The glyph data for the given character or the default glyph data
-        ///   if the given character is not present in this glyph map.
-        /// </returns>
-        public ref readonly GlyphData GetGlyphData(int character)
+        /// <param name="glyphData">The glyph data for the given character.</param>
+        /// <returns><c>true</c> if the glyph for the given character was found, <c>false</c> if it wasn't.</returns>
+        public bool TryGetGlyphData(int character, out GlyphData glyphData)
         {
-            return ref GetGlyphData(character, ref GlyphData.Default);
+            glyphData = GetGlyphData(character, GlyphData.Default);
+            return glyphData.Character == character;
         }
 
         /// <summary>
@@ -92,10 +86,10 @@ namespace OpenWheels.Fonts
         /// <param name="character">UTF-32 encoded character to get glyph data for.</param>
         /// <param name="fallback">The fallback <see cref="GlyphData"/> to use if the glyph is not found in the map.</param>
         /// <returns>
-        ///   The glyph data for the given character or the fallback glyph data
+        ///   The glyph data for the given character or the given fallback glyph data
         ///   if the given character is not present in this glyph map.
         /// </returns>
-        public ref readonly GlyphData GetGlyphData(int character, ref GlyphData fallback)
+        public ref readonly GlyphData GetGlyphData(int character, in GlyphData fallback)
         {
             var rangeIndex = FindCharacterIndex(character);
             if (rangeIndex == -1)

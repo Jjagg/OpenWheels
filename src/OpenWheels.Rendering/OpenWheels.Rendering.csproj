@@ -12,5 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\OpenWheels\OpenWheels.csproj" />
+    <ProjectReference Include="..\OpenWheels.Fonts\OpenWheels.Fonts.csproj" />
   </ItemGroup>
 </Project>

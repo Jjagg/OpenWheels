@@ -17,7 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\OpenWheels.Rendering\OpenWheels.Rendering.csproj" />
-    <PackageReference Include="Veldrid" Version="4.4.0" />
+    <PackageReference Include="Veldrid" Version="$(VeldridVersion)" />
     <PackageReference Include="ShaderGen.Primitives" Version="$(ShaderGenVersion)" />
     <PackageReference Include="ShaderGen.Build" PrivateAssets="All" Version="$(ShaderGenVersion)" />
   </ItemGroup>

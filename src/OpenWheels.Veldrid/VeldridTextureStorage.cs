@@ -47,11 +47,23 @@ namespace OpenWheels.Veldrid
         /// Created textures are 2D, non-multisampled, non-mipmapped textures with RGBA8 UNorm format and
         /// texture usage <see cref="TextureUsage.Sampled"/>.
         /// </remarks>
-        public override int CreateTexture(int width, int height)
+        public override int CreateTexture(int width, int height, TextureFormat format)
         {
             CheckDisposed();
+            PixelFormat pFormat;
+            switch (format)
+            {
+                case TextureFormat.Red8:
+                    pFormat = PixelFormat.R8_UNorm;
+                    break;
+                case TextureFormat.Rgba32:
+                    pFormat = PixelFormat.R8_G8_B8_A8_UNorm;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format));
+            }
 
-            var textureDescr = TextureDescription.Texture2D((uint) width, (uint) height, 0, 1, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Sampled);
+            var textureDescr = TextureDescription.Texture2D((uint) width, (uint) height, 0, 1, pFormat, TextureUsage.Sampled);
             var tex = _gd.ResourceFactory.CreateTexture(ref textureDescr);
             return AddTexture(tex);
         }
@@ -72,12 +84,20 @@ namespace OpenWheels.Veldrid
         }
 
         /// <inheritdoc/>
+        public override bool HasTexture(int id)
+        {
+            CheckDisposed();
+            return id < _textures.Length && _textures[id] != null;
+        }
+
+        /// <inheritdoc/>
         public override Texture GetTexture(int id) 
         {
             CheckDisposed();
             return _textures[id];
         }
 
+        /// <inheritdoc/>
         public override Size GetTextureSize(int id)
         {
             CheckDisposed();
@@ -86,18 +106,29 @@ namespace OpenWheels.Veldrid
             return new Size((int) tex.Width, (int) tex.Height);
         }
 
-        public unsafe override void SetData(int id, Span<Color> data)
+        /// <inheritdoc/>
+        public override TextureFormat GetTextureFormat(int id)
+        {
+            CheckDisposed();
+            var tex = _textures[id];
+            return tex.Format == PixelFormat.R8_UNorm ? TextureFormat.Red8 : TextureFormat.Rgba32;
+        }
+
+        /// <inheritdoc/>
+        public unsafe override void SetData(int id, ReadOnlySpan<byte> data)
         {
             CheckDisposed();
 
             var tex = _textures[id];
-            if (data.Length != tex.Width * tex.Height)
-                throw new ArgumentException($"Length of data (${data.Length}) did not match width * height of the texture (${tex.Width * tex.Height}).", nameof(data));
+            var bpp = tex.Format == PixelFormat.R8_UNorm ? 1 : 4;
+            if (data.Length != tex.Width * tex.Height * bpp)
+                throw new ArgumentException($"Length of data (${data.Length}) did not match width * height * bpp of the texture (${tex.Width * tex.Height * bpp}).", nameof(data));
 
             CopyData(tex, data, 0, 0, tex.Width, tex.Height);
         }
 
-        public override void SetData(int id, in Rectangle subRect, Span<Color> data)
+        /// <inheritdoc/>
+        public override void SetData(int id, in Rectangle subRect, ReadOnlySpan<byte> data)
         {
             CheckDisposed();
 
@@ -159,25 +190,28 @@ namespace OpenWheels.Veldrid
             return id;
         }
 
-        private unsafe void CopyData(Texture tex, Span<Color> data, uint tx, uint ty, uint width, uint height)
+        private unsafe void CopyData(Texture tex, ReadOnlySpan<byte> data, uint tx, uint ty, uint width, uint height)
         {
             var staging = GetStaging(width, height);
 
             _setDataCommandList.Begin();
 
+            var bpp = tex.Format == PixelFormat.R8_UNorm ? 1 : 4;
+            var rowBytes = (int) width * bpp;
+
             var map = _gd.Map(staging, MapMode.Write, 0);
-            if (width == map.RowPitch / 4)
+            if (rowBytes == map.RowPitch)
             {
-                var dst = new Span<Color>(map.Data.ToPointer(), (int) (width * height));
+                var dst = new Span<byte>(map.Data.ToPointer(), (int) (rowBytes * height));
                 data.CopyTo(dst);
             }
             else
             {
-                var dataPtr = (byte*) map.Data.ToPointer();
+                var nativePtr = (byte*) map.Data.ToPointer();
                 for (var y = 0; y < height; y++)
                 {
-                    var dst = new Span<Color>(dataPtr + y * (int) map.RowPitch, (int) width);
-                    var src = data.Slice(y * (int) width, (int) width);
+                    var dst = new Span<byte>(nativePtr + y * (int) map.RowPitch, rowBytes);
+                    var src = data.Slice(y * rowBytes, rowBytes);
                     src.CopyTo(dst);
                 }
             }
@@ -194,14 +228,14 @@ namespace OpenWheels.Veldrid
         {
             if (_staging == null)
             {
-                var td = new TextureDescription(width, height, 1, 0, 0, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Staging, TextureType.Texture2D);
+                var td = new TextureDescription(width, height, 1, 0, 1, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Staging, TextureType.Texture2D);
                 _staging = _gd.ResourceFactory.CreateTexture(ref td);
             }
             else if (_staging.Width < width || _staging.Height < height)
             {
                 var newWidth = width > _staging.Width ? width : _staging.Width;
                 var newHeight = height > _staging.Height ? height : _staging.Height;
-                var td = new TextureDescription(newWidth, newHeight, 1, 0, 0, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Staging, TextureType.Texture2D);
+                var td = TextureDescription.Texture2D(newWidth, newHeight, 0, 1, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Staging);
                 _gd.DisposeWhenIdle(_staging);
                 _staging = _gd.ResourceFactory.CreateTexture(ref td);
             }

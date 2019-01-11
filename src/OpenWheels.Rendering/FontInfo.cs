@@ -1,41 +1,27 @@
 namespace OpenWheels.Rendering
 {
     /// <summary>
-    /// Identifies a font.
+    /// Contains name and size of a font.
     /// </summary>
     public struct FontInfo
     {
         /// <summary>
         /// Name of the font.
         /// </summary>
-        public string Name;
+        public readonly string Name;
 
         /// <summary>
-        /// Style of the font.
+        /// Point size of the font.
         /// </summary>
-        public FontStyle Style;
+        public readonly float Size;
 
         /// <summary>
-        /// The character used for missing glyphs.
+        /// Create a new FontInfo instance.
         /// </summary>
-        public int? FallbackCharacter;
-
-        /// <summary>
-        /// Create font info with the given font name and optionally a fallback character.
-        /// </summary>
-        public FontInfo(string name, int? fallbackCharacter = null)
-            : this(name, FontStyle.Regular, fallbackCharacter)
-        {
-        }
-
-        /// <summary>
-        /// Create font info with the given font name and style, and optionally a fallback character.
-        /// </summary>
-        public FontInfo(string name, FontStyle style, int? fallbackCharacter = null)
+        public FontInfo(string name, float size)
         {
             Name = name;
-            Style = style;
-            FallbackCharacter = fallbackCharacter;
+            Size = size;
         }
     }
 }

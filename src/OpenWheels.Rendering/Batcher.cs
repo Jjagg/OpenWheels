@@ -102,10 +102,14 @@ namespace OpenWheels.Rendering
         /// </summary>
         public int VerticesSubmitted { get; private set; }
 
+        /// <summary>
+        /// The renderer for text used in <see cref="DrawText"/>.
+        /// </summary>
+        public IBitmapFontRenderer TextRenderer { get; }
+
         private readonly List<BatchInfo> _batches;
         private bool _finished;
 
-        private Sprite _sprite;
         private RectangleF _spriteUv;
         private bool _useSpriteUv;
         private BlendState _blendState;
@@ -149,33 +153,11 @@ namespace OpenWheels.Rendering
         }
 
         /// <summary>
-        /// Get or set the sprite to use for texturing.
+        /// Get the active texture.
+        /// To change the texture use one of <see cref="SetTexture"/>, <see cref="SetSprite"/>
+        /// or <see cref="SetUvSprite"/>.
         /// </summary>
-        public Sprite Sprite
-        {
-            get => _sprite;
-            set
-            {
-                if (value.Texture != Sprite.Texture)
-                    Flush();
-                _sprite = value;
-                var texSize = TextureStorage.GetTextureSize(_sprite.Texture);
-                if (texSize == _sprite.SrcRect.Size)
-                {
-                    _spriteUv = RectangleF.Unit;
-                    _useSpriteUv = false;
-                }
-                else
-                {
-                    _spriteUv = new RectangleF(
-                        (float) _sprite.SrcRect.X / texSize.Width,
-                        (float) _sprite.SrcRect.Y / texSize.Height,
-                        (float) _sprite.SrcRect.Width / texSize.Width,
-                        (float) _sprite.SrcRect.Height / texSize.Height);
-                    _useSpriteUv = true;
-                }
-            }
-        }
+        public int Texture { get; private set; }
 
         /// <summary>
         /// Get or set the blend state.
@@ -220,32 +202,31 @@ namespace OpenWheels.Rendering
         public object BatchData { get; set; }
 
         /// <summary>
-        /// A blank white sprite. Implementors are expected to follow this convention, either
-        /// by having the texture with id 0 be completely white or by having the texture with id
-        /// 0 having a white first pixel.
-        /// </summary>
-        public static readonly Sprite BlankSprite = new Sprite(0, Rectangle.Unit);
-
-        /// <summary>
-        /// Create a <see cref="Batcher"/> with a <see cref="NullTextureStorage"/>.
+        /// Create a <see cref="Batcher"/> with a <see cref="NullTextureStorage"/> and <see cref="NullBitmapFontRenderer"/>.
         /// </summary>
         /// <remarks>
-        /// Using a <see cref="NullTextureStorage"/> can be useful when using
-        /// <see cref="DebugRenderer"/> or a similar renderer for debugging purposes.
+        /// Using a <see cref="NullTextureStorage"/> and a <see cref="NullBitmapFontRenderer"/> can be
+        /// useful when using <see cref="DebugRenderer"/> or a similar renderer for debugging purposes.
         ///
         /// It can also be used for a renderer that does use handle textures.
         /// </remarks>
-        public Batcher() : this(NullTextureStorage.Instance)
+        public Batcher() : this(NullTextureStorage.Instance, NullBitmapFontRenderer.Instance)
         {
         }
 
         /// <summary>
         /// Create a batcher with a texture storage.
         /// </summary>
-        /// <param name="textureStorage">Renderer to execute draw calls.</param>
-        public Batcher(ITextureStorage textureStorage)
+        /// <param name="textureStorage">Texture storage to use.</param>
+        /// <param name="textRenderer">Text renderer to use.</param>
+        /// <exception cref="ArgumentNullException">If <paramref name="textureStorage" /> is <c>null</c>.</exception>
+        public Batcher(ITextureStorage textureStorage, IBitmapFontRenderer textRenderer)
         {
+            if (textureStorage == null)
+                throw new ArgumentNullException(nameof(textureStorage));
+
             TextureStorage = textureStorage;
+            TextRenderer = textRenderer;
 
             _vb = new Vertex[InitialMaxVertices];
             _ib = new int[InitialMaxIndices];
@@ -289,28 +270,59 @@ namespace OpenWheels.Rendering
         /// Set the texture for fills.
         /// </summary>
         /// <param name="texture">Texture identifier.</param>
-        public void SetTexture(int texture)
-        {
-            var size = TextureStorage.GetTextureSize(texture);
-            Sprite = new Sprite(texture, new Rectangle(0, 0, size.Width, size.Height));
-        }
+        public void SetTexture(int texture) => SetUvSprite(texture, RectangleF.Unit);
 
         /// <summary>
-        /// Set the fill texture to a white pixel.
+        /// Set the sprite for fills.
         /// </summary>
-        public void SetBlankSprite()
-        {
-            Sprite = BlankSprite;
-        }
+        /// <param name="sprite">The sprite to set.</param>
+        public void SetSprite(in Sprite sprite) => SetSprite(sprite);
 
         /// <summary>
         /// Set the sprite for fills.
         /// </summary>
         /// <param name="texture">Texture identifier.</param>
-        /// <param name="srcRect">Source rectangle of the sprite inside the texture.</param>
+        /// <param name="srcRect">Source rectangle of the sprite in the texture in pixels.</param>
         public void SetSprite(int texture, in Rectangle srcRect)
         {
-            Sprite = new Sprite(texture, srcRect);
+            var texSize = TextureStorage.GetTextureSize(texture);
+            var uvRect = new RectangleF(
+                    (float) srcRect.X / texSize.Width,
+                    (float) srcRect.Y / texSize.Height,
+                    (float) srcRect.Width / texSize.Width,
+                    (float) srcRect.Height / texSize.Height);
+
+            SetUvSprite(texture, uvRect);
+        }
+
+        /// <summary>
+        /// Set the sprite for fills.
+        /// </summary>
+        /// <param name="sprite">Sprite to set.</param>
+        public void SetUvSprite(in UvSprite sprite) => SetUvSprite(sprite.Texture, sprite.SrcRect);
+ 
+        /// <summary>
+        /// Set the sprite for fills.
+        /// </summary>
+        /// <param name="texture">Texture identifier.</param>
+        /// <param name="srcRect">Source rectangle of the sprite in the texture in UV coordinates.</param>
+        public void SetUvSprite(int texture, in RectangleF srcRect)
+        {
+            if (texture != this.Texture)
+                Flush();
+
+            Texture = texture;
+
+            if (srcRect == RectangleF.Unit)
+            {
+                _spriteUv = RectangleF.Unit;
+                _useSpriteUv = false;
+            }
+            else
+            {
+                _spriteUv = srcRect;
+                _useSpriteUv = true;
+            }
         }
 
         #endregion
@@ -831,21 +843,42 @@ namespace OpenWheels.Rendering
         #region Text
 
         /// <summary>
-        /// Render text. Changes the active <see cref="Sprite"/>.
+        /// Render text. Changes the active <see cref="Texture"/> if required.
         /// </summary>
-        /// <param name="textBatcher">Text batcher that handles text layout and batching.</param>
-        /// <param name="fontInfo">The font to use.</param>
+        /// <param name="fontName">The font to use.</param>
+        /// <param name="size">Point size to render the font at.</param>
         /// <param name="text">The text to draw.</param>
+        /// <param name="position">Position to start rendering the font (top left).</param>
         /// <param name="color">Color of the text.</param>
-        /// <param name="tlo">Layout options for rendering the text.</param>
-        /// <exception cref="InvalidOperationException">
-        ///   If a character from the given text has no glyph registered in the
-        ///   font and no fallback character is set.
-        /// </exception>
-        public void DrawText(ITextRenderer textBatcher, in FontInfo fontInfo, ReadOnlySpan<char> text, Color color, in TextLayoutOptions tlo)
+        public void DrawText(string fontName, float size, string text, Vector2 position, Color color)
         {
-            textBatcher.RenderText(this, fontInfo, text, tlo);
+            var tlo = new TextLayoutOptions(position);
+            var fontInfo = new FontInfo(fontName, size);
+            this.DrawText(fontInfo, text, tlo, color);
         }
+
+        /// <summary>
+        /// Render text. Changes the active <see cref="Texture"/> if required.
+        /// </summary>
+        /// <param name="fontInfo">Name and size of the font.</param>
+        /// <param name="text">The text to draw.</param>
+        /// <param name="position">Position to start rendering the font (top left).</param>
+        /// <param name="color">Color of the text.</param>
+        public void DrawText(in FontInfo fontInfo, string text, Vector2 position, Color color)
+        {
+            var tlo = new TextLayoutOptions(position);
+            this.DrawText(fontInfo, text, tlo, color);
+        }
+
+        /// <summary>
+        /// Render text. Changes the active <see cref="Texture"/> if required.
+        /// </summary>
+        /// <param name="fontInfo">Name and size of the font.</param>
+        /// <param name="text">The text to draw.</param>
+        /// <param name="tlo">Layout options for rendering the text.</param>
+        /// <param name="color">Color of the text.</param>
+        public void DrawText(FontInfo fontInfo, string text, in TextLayoutOptions tlo, Color color)
+            => TextRenderer.RenderText(this, fontInfo, text, tlo, color);
 
         #endregion
 
@@ -951,6 +984,22 @@ namespace OpenWheels.Rendering
         }
 
         /// <summary>
+        /// Call this to finish a set of batches (if not yet finished) and render them with the passed in renderer.
+        /// </summary>
+        /// <param name="renderer">Renderer to draw the batches with.</param>
+        public void Render(IRenderer renderer)
+        {
+            var batches = Finish();
+
+            renderer.BeginRender(_vb, _ib, VerticesSubmitted, IndicesSubmitted);
+
+            foreach (var batch in batches)
+                renderer.DrawBatch(batch.GraphicsState, batch.Startindex, batch.IndexCount, batch.UserData);
+
+            renderer.EndRender();
+        }
+
+        /// <summary>
         /// End the current batch.
         /// </summary>
         public void Flush()
@@ -959,7 +1008,7 @@ namespace OpenWheels.Rendering
             if (_indicesInBatch == 0 && BatchData == null)
                 return;
 
-            var gs = new GraphicsState(Sprite.Texture, SamplerState);
+            var gs = new GraphicsState(Texture, SamplerState);
             var bi = new BatchInfo(gs, _nextToDraw, _indicesInBatch, BatchData);
             _batches.Add(bi);
 

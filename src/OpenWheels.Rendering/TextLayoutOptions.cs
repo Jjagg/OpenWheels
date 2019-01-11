@@ -14,11 +14,6 @@ namespace OpenWheels.Rendering
         public Vector2 Position;
 
         /// <summary>
-        /// Point size to render the font at.
-        /// </summary>
-        public float Size;
-
-        /// <summary>
         /// Alignment mode for text along the horizontal axis.
         /// <summary>
         public TextAlignment HorizontalAlignment;
@@ -43,24 +38,37 @@ namespace OpenWheels.Rendering
         public float TabWidth;
 
         /// <summary>
+        /// Flags for text layout and rendering.
+        /// </summary>
+        public TextLayoutFlags Flags;
+
+        /// <summary>
+        /// Create new text layout options. Sets <see cref="Flags"/> to <see cref="TextLayoutFlags.Kerning"/>.
+        /// </summary>
+        public TextLayoutOptions(Vector2 position, TextAlignment ha = TextAlignment.Start, TextAlignment va = TextAlignment.Start, float wrappingWidth = -1f, float tabWidth = 4f)
+            : this(position, TextLayoutFlags.Kerning, ha, va, wrappingWidth, tabWidth)
+        {
+        }
+
+        /// <summary>
         /// Create new text layout options.
         /// </summary>
-        public TextLayoutOptions(Vector2 position, float size, TextAlignment ha = TextAlignment.Start, TextAlignment va = TextAlignment.Start, float wrappingWidth = -1f, float tabWith = 4f)
+        public TextLayoutOptions(Vector2 position, TextLayoutFlags flags, TextAlignment ha = TextAlignment.Start, TextAlignment va = TextAlignment.Start, float wrappingWidth = -1f, float tabWith = 4f)
         {
             Position = position;
-            Size = size;
             HorizontalAlignment = ha;
             VerticalAlignment = va;
             WrappingWidth = wrappingWidth;
             TabWidth = tabWith;
+            Flags = flags;
         }
 
         /// <summary>
         /// Get the default text layout options.
-        /// Use position <see cref="Vector2.Zero"/> and size 24f.
+        /// Use position <see cref="Vector2.Zero"/>.
         /// Other settings are set to their default values from the constructor
-        /// <see cref="TextLayoutOptions(Vector2, float, TextAlignment, TextAlignment, float, float)"/>.
+        /// <see cref="TextLayoutOptions(Vector2, TextAlignment, TextAlignment, float, float)"/>.
         /// </summary>
-        public static TextLayoutOptions Default => new TextLayoutOptions(Vector2.Zero, 24f);
+        public static TextLayoutOptions Default => new TextLayoutOptions(Vector2.Zero);
     }
 }

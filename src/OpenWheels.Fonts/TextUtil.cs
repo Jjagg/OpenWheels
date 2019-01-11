@@ -73,6 +73,14 @@ namespace OpenWheels.Fonts
         }
 
         /// <summary>
+        /// Get the characters in a string of text as ranges of UTF-32 characters.
+        /// </summary>
+        /// <param name="characters">String containing the characters to group in ranges.</param>
+        /// <returns>Collection of character ranges including all characters in the given string.</returns>
+        public static IEnumerable<Range<int>> GetCharacterRanges(string characters)
+            => GroupInRanges(ToUtf32(characters));
+
+        /// <summary>
         /// Create ranges by specifying the beginning and end of each in sequence.
         /// </summary>
         /// <param name="args">The beginning and end of the ranges.</param>
