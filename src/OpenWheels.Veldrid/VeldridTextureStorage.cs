@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using OpenWheels.Rendering;
 using Veldrid;
 
@@ -63,7 +64,7 @@ namespace OpenWheels.Veldrid
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
 
-            var textureDescr = TextureDescription.Texture2D((uint) width, (uint) height, 0, 1, pFormat, TextureUsage.Sampled);
+            var textureDescr = TextureDescription.Texture2D((uint) width, (uint) height, 1, 1, pFormat, TextureUsage.Sampled);
             var tex = _gd.ResourceFactory.CreateTexture(ref textureDescr);
             return AddTexture(tex);
         }
@@ -115,28 +116,30 @@ namespace OpenWheels.Veldrid
         }
 
         /// <inheritdoc/>
-        public unsafe override void SetData(int id, ReadOnlySpan<byte> data)
+        public unsafe override void SetData<T>(int id, ReadOnlySpan<T> data)
         {
             CheckDisposed();
 
             var tex = _textures[id];
             var bpp = tex.Format == PixelFormat.R8_UNorm ? 1 : 4;
-            if (data.Length != tex.Width * tex.Height * bpp)
-                throw new ArgumentException($"Length of data (${data.Length}) did not match width * height * bpp of the texture (${tex.Width * tex.Height * bpp}).", nameof(data));
+            if (data.Length * Marshal.SizeOf<T>() != tex.Width * tex.Height * bpp)
+                throw new ArgumentException($"Length of data ({data.Length * Marshal.SizeOf<T>()}) did not match width * height * bpp of the texture ({tex.Width * tex.Height * bpp}).", nameof(data));
 
-            CopyData(tex, data, 0, 0, tex.Width, tex.Height);
+            var byteSpan = MemoryMarshal.Cast<T, byte>(data);
+            CopyData(tex, byteSpan, 0, 0, tex.Width, tex.Height);
         }
 
         /// <inheritdoc/>
-        public override void SetData(int id, in Rectangle subRect, ReadOnlySpan<byte> data)
+        public override void SetData<T>(int id, in Rectangle subRect, ReadOnlySpan<T> data)
         {
             CheckDisposed();
 
             var tex = _textures[id];
-            if (data.Length != tex.Width * tex.Height)
-                throw new ArgumentException($"Length of data (${data.Length}) did not match width * height of the texture (${tex.Width * tex.Height}).", nameof(data));
+            if (data.Length * Marshal.SizeOf<T>() != tex.Width * tex.Height)
+                throw new ArgumentException($"Length of data (${data.Length * Marshal.SizeOf<T>()}) did not match width * height of the texture (${tex.Width * tex.Height}).", nameof(data));
 
-            CopyData(tex, data, (uint) subRect.X, (uint) subRect.Y, (uint) subRect.Width, (uint) subRect.Height);
+            var byteSpan = MemoryMarshal.Cast<T, byte>(data);
+            CopyData(tex, byteSpan, (uint) subRect.X, (uint) subRect.Y, (uint) subRect.Width, (uint) subRect.Height);
         }
 
         #region IDisposable
@@ -202,15 +205,15 @@ namespace OpenWheels.Veldrid
             var map = _gd.Map(staging, MapMode.Write, 0);
             if (rowBytes == map.RowPitch)
             {
-                var dst = new Span<byte>(map.Data.ToPointer(), (int) (rowBytes * height));
+                var dst = new Span<byte>((byte*) map.Data.ToPointer() + rowBytes * ty, (int) (rowBytes * height));
                 data.CopyTo(dst);
             }
             else
             {
-                var nativePtr = (byte*) map.Data.ToPointer();
+                var stagingPtr = (byte*) map.Data.ToPointer();
                 for (var y = 0; y < height; y++)
                 {
-                    var dst = new Span<byte>(nativePtr + y * (int) map.RowPitch, rowBytes);
+                    var dst = new Span<byte>(stagingPtr + y * (int) map.RowPitch, rowBytes);
                     var src = data.Slice(y * rowBytes, rowBytes);
                     src.CopyTo(dst);
                 }
@@ -218,7 +221,7 @@ namespace OpenWheels.Veldrid
 
             _gd.Unmap(staging);
 
-            _setDataCommandList.CopyTexture(staging, 0, 0, 0, 0, 0, tex, tx, ty, 0, 0, 0, width, height, 0, 1);
+            _setDataCommandList.CopyTexture(staging, 0, 0, 0, 0, 0, tex, tx, ty, 0, 0, 0, width, height, 1, 1);
             _setDataCommandList.End();
 
             _gd.SubmitCommands(_setDataCommandList);
@@ -228,14 +231,14 @@ namespace OpenWheels.Veldrid
         {
             if (_staging == null)
             {
-                var td = new TextureDescription(width, height, 1, 0, 1, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Staging, TextureType.Texture2D);
+                var td = TextureDescription.Texture2D(width, height, 1, 1, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Staging);
                 _staging = _gd.ResourceFactory.CreateTexture(ref td);
             }
             else if (_staging.Width < width || _staging.Height < height)
             {
                 var newWidth = width > _staging.Width ? width : _staging.Width;
                 var newHeight = height > _staging.Height ? height : _staging.Height;
-                var td = TextureDescription.Texture2D(newWidth, newHeight, 0, 1, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Staging);
+                var td = TextureDescription.Texture2D(newWidth, newHeight, 1, 1, PixelFormat.R8_G8_B8_A8_UNorm, TextureUsage.Staging);
                 _gd.DisposeWhenIdle(_staging);
                 _staging = _gd.ResourceFactory.CreateTexture(ref td);
             }

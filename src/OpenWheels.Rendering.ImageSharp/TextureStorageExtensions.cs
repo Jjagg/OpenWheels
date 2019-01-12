@@ -139,7 +139,7 @@ namespace OpenWheels.Rendering.ImageSharp
         private static int RegisterImage(ITextureStorage storage, Image<Rgba32> img)
         {
             var id = storage.CreateTexture(img.Width, img.Height, TextureFormat.Rgba32);
-            var pixelSpan = MemoryMarshal.Cast<Rgba32, byte>(img.GetPixelSpan());
+            ReadOnlySpan<Rgba32> pixelSpan = img.GetPixelSpan();
             storage.SetData(id, pixelSpan);
             return id;
         }

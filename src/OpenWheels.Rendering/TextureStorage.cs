@@ -21,9 +21,9 @@ namespace OpenWheels.Rendering
         /// <inheritdoc />
         public abstract TextureFormat GetTextureFormat(int id);
         /// <inheritdoc />
-        public abstract void SetData(int id, ReadOnlySpan<byte> data);
+        public abstract void SetData<TData>(int id, ReadOnlySpan<TData> data) where TData : struct;
         /// <inheritdoc />
-        public abstract void SetData(int id, in Rectangle subRect, ReadOnlySpan<byte> data);
+        public abstract void SetData<TData>(int id, in Rectangle subRect, ReadOnlySpan<TData> data) where TData : struct;
 
         /// <summary>
         /// Get the native texture with the matching id.

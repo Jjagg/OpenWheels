@@ -276,7 +276,7 @@ namespace OpenWheels.Rendering
         /// Set the sprite for fills.
         /// </summary>
         /// <param name="sprite">The sprite to set.</param>
-        public void SetSprite(in Sprite sprite) => SetSprite(sprite);
+        public void SetSprite(in Sprite sprite) => SetSprite(sprite.Texture, sprite.SrcRect);
 
         /// <summary>
         /// Set the sprite for fills.

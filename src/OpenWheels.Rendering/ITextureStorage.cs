@@ -56,7 +56,7 @@ namespace OpenWheels.Rendering
         /// <param name="id">Id of the texture.</param>
         /// <param name="data">Pixel data to set to the texture.</param>
         /// <exception name="ArgumentException">If <see cref="data.Length"/> is not equal to <c>width * height * format.GetBytesPerPixel()</c> of the matching texture.</exception>
-        void SetData(int id, ReadOnlySpan<byte> data);
+        void SetData<T>(int id, ReadOnlySpan<T> data) where T : struct;
         /* TODO C# 8
         {
             (var w, var h) = GetTextureSize(id);
@@ -73,7 +73,7 @@ namespace OpenWheels.Rendering
         /// <param name="data">Pixel data to set to the texture.</param>
         /// <exception name="ArgumentException">If (a part of) <see cref="subRect"/> falls outside the texture bounds.</exception>
         /// <exception name="ArgumentException">If <c>data.Length</c> is not equal to <c>width * height</c> of <paramref name="subRect"/>.</exception>
-        void SetData(int id, in Rectangle subRect, ReadOnlySpan<byte> data);
+        void SetData<T>(int id, in Rectangle subRect, ReadOnlySpan<T> data) where T : struct;
 
         /// <summary>
         /// Invoked when a texture is created.
@@ -103,8 +103,8 @@ namespace OpenWheels.Rendering
         public bool HasTexture(int id) => false;
         public TextureFormat GetTextureFormat(int id) => TextureFormat.Rgba32;
         public Size GetTextureSize(int id) => Size.Empty;
-        public void SetData(int id, ReadOnlySpan<byte> data) { }
-        public void SetData(int id, in Rectangle subRect, ReadOnlySpan<byte> data) { }
+        public void SetData<T>(int id, ReadOnlySpan<T> data) where T : struct { }
+        public void SetData<T>(int id, in Rectangle subRect, ReadOnlySpan<T> data) where T : struct { }
 
         public event EventHandler<TextureCreatedEventArgs> TextureCreated { add { } remove { } }
         public event EventHandler<TextureDestroyedEventArgs> TextureDestroyed { add { } remove { } }
