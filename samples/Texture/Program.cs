@@ -21,18 +21,11 @@ namespace Texture
             // Create the window and the graphics device
             VeldridInit(out var window, out var graphicsDevice);
 
-            // Create a renderer that implements the OpenWheels.Rendering.IRenderer interface
-            // this guy actually draws everything to the backbuffer
-            var renderer = new VeldridRenderer(graphicsDevice);
-
-            // Our batcher lets use make calls to render lots of different primitive shapes and text.
-            // When we're done the batcher sends the draw calls to the renderer which will actually do the drawing.
-
-            // Alternatively to Batcher you can use StringIdBatcher so you can register and set the active texture
-            // and font with a string identifier.
-            var batcher = new Batcher(renderer);
-
-            var checkerBoardTextureId = batcher.LoadTexture("checkerboard.png");
+            // See the Primitives sample for the basic concepts of OpenWheels
+            var texStorage = new VeldridTextureStorage(graphicsDevice);
+            var renderer = new VeldridRenderer(graphicsDevice, texStorage);
+            var batcher = new Batcher(texStorage, NullBitmapFontRenderer.Instance);
+            var checkerBoardTextureId = texStorage.LoadTexture("checkerboard.png");
 
             // OpenWheels defines a sprite as an image that's part of a texture
             // To create a sprite, we pass a texture and a region of that texture (in pixels) that contains the actual image
@@ -47,7 +40,7 @@ namespace Texture
             //         |## |
             //         |  #|
 
-            var cbSize = renderer.GetTextureSize(checkerBoardTextureId);
+            var cbSize = texStorage.GetTextureSize(checkerBoardTextureId);
             var subSpriteRect = new Rectangle(0, 0, (cbSize.Width * 3) / 4, (cbSize.Height * 3) / 4);
             var checkerBoardSubSprite = new Sprite(checkerBoardTextureId, subSpriteRect);
 
@@ -73,7 +66,7 @@ namespace Texture
                 batcher.FillRect(new RectangleF(200, 20, 100, 200), Color.White);
 
                 // Let's draw our subsprite
-                batcher.Sprite = checkerBoardSubSprite;
+                batcher.SetSprite(checkerBoardSubSprite);
                 batcher.FillRect(new RectangleF(350, 20, 100, 100), Color.White);
 
                 // We can only draw 1 texture in a single draw call, but since our subsprite actually uses the same
@@ -116,7 +109,7 @@ namespace Texture
                 batcher.FillRect(new RectangleF(350, 280, 100, 100), Color.Red);
 
                 // Finish the batch and let the renderer draw everything to the back buffer.
-                batcher.Finish();
+                batcher.Render(renderer);
 
                 if (frame < 2)
                 {

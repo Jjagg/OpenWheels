@@ -18,18 +18,26 @@ namespace Primitives
             // Create the window and the graphics device
             VeldridInit(out var window, out var graphicsDevice);
 
+            // Create a texture storage that manages textures.
+            // Textures in OpenWheels are represented with integer values.
+            // A platform-specific ITextureStorageImplementation handles texture creation,
+            // destruction and modification.
+            var texStorage = new VeldridTextureStorage(graphicsDevice);
+
             // Create a renderer that implements the OpenWheels.Rendering.IRenderer interface
             // this guy actually draws everything to the backbuffer
-            var renderer = new VeldridRenderer(graphicsDevice);
+            var renderer = new VeldridRenderer(graphicsDevice, texStorage);
 
             // OpenWheels always requires a texture to render, so renderer implementations only need a single shader
             // Even for untextured primitives we need to have a texture set. So we create a white 1x1 texture for those.
-            Span<Color> blankSpan = stackalloc Color[] { Color.White };
-            var blank = renderer.RegisterTexture(blankSpan, 1, 1);
+            ReadOnlySpan<Color> blankSpan = stackalloc Color[] { Color.White };
+            var blank = texStorage.CreateTexture(1, 1, TextureFormat.Rgba32);
+            texStorage.SetData(blank, blankSpan);
 
             // Our batcher lets use make calls to render lots of different primitive shapes and text.
-            // When we're done the batcher sends the draw calls to the renderer which will actually do the drawing.
-            var batcher = new Batcher(renderer);
+            // When we're done the batcher can export draw calls so the renderer can use them do the drawing.
+            // We won't use text rendering in this sample so we use the dummy text renderer.
+            var batcher = new Batcher(texStorage, NullBitmapFontRenderer.Instance);
 
             var first = true;
 
@@ -74,7 +82,7 @@ namespace Primitives
                 batcher.DrawCurve(curve2, Color.DarkOrchid, 2);
 
                 // Finish the batch and let the renderer draw everything to the back buffer.
-                batcher.Finish();
+                batcher.Render(renderer);
 
                 if (first)
                 {
@@ -101,10 +109,7 @@ namespace Primitives
             };
 
             window = VeldridStartup.CreateWindow(ref windowCI);
-
-            // no debug, no depth buffer and enable v-sync
-            var gdo = new GraphicsDeviceOptions(false, null, syncToVerticalBlank: true);
-            graphicsDevice = VeldridStartup.CreateGraphicsDevice(window, gdo);
+            graphicsDevice = VeldridStartup.CreateGraphicsDevice(window);
         }
 
         private static void VeldridRunLoop(Sdl2Window window, GraphicsDevice graphicsDevice, Action action)

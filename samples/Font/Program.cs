@@ -70,15 +70,15 @@ namespace Font
                 batcher.DrawText(fi, "Hello World!", new Vector2(100f), Color.Black);
 
                 // We rotate and translate this one a little bit for style 😎
-                batcher.PositionTransform = Matrix3x2.CreateTranslation(52, -154) * Matrix3x2.CreateRotation((float)Math.PI / 2f);
+                batcher.PositionTransform = Matrix3x2.CreateTranslation(150, 0) * Matrix3x2.CreateRotation((float)Math.PI / 8f);
                 var tlo = new TextLayoutOptions(Vector2.Zero, va: TextAlignment.End);
-                batcher.DrawText(fi, "Hell  World!", tlo, Color.Black);
+                batcher.DrawText(fi, "This is rendered from a font atlas!", tlo, Color.DarkRed);
 
                 // Reset the transformation matrix
                 batcher.PositionTransform = Matrix3x2.Identity;
 
-                // Finish the batch and let the renderer draw everything to the back buffer.
-                batcher.Finish();
+                // Finish the frame and let the renderer draw everything to the back buffer.
+                batcher.Render(renderer);
 
                 if (first)
                 {
