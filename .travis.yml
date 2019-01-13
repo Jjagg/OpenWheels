@@ -5,6 +5,7 @@ mono: none
 git:
   depth: 500
 script:
+  - dotnet build
   - dotnet test test/**/*.csproj
   - dotnet pack -c Release OpenWheels.sln
 after_success: dotnet nuget push "bin/Release/*.nupkg" -s https://www.myget.org/F/jjagg -k $MYGET_JJAGG_API_KEY
