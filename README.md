@@ -4,7 +4,7 @@ OpenWheels is a set of libraries written mostly for use in game development. Its
 
 Note that the project is still in an early stage and the API can change at any time. Feedback is welcomed, please open an issue if you have any.
 
-The library is split into multiple projects:
+OpenWheels is split into multiple projects:
 
 - [OpenWheels](src/OpenWheels): core classes for basic geometry and colors.
 - [OpenWheels.BinPack](src/OpenWheels.BinPack): bin packing using MaxRects.
