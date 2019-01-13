@@ -4,6 +4,10 @@
     <TargetFramework>netstandard1.1</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Description>Components useful in game development e.g. tweening, coroutines.</Description>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\OpenWheels\OpenWheels.csproj" />
   </ItemGroup>
