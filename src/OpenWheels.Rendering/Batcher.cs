@@ -197,14 +197,11 @@ namespace OpenWheels.Rendering
         public object BatchData { get; set; }
 
         /// <summary>
-        /// Create a <see cref="Batcher"/> with a <see cref="NullBitmapFontRenderer"/>.
+        /// Create a <see cref="Batcher"/> with a new <see cref="FontsTextRenderer"/>.
+        /// Note that you'll have to preload fonts before rendering text using <see cref="FontsTextRenderer.AddFont"/>.
+        /// You can retrieve the text renderer via the <see cref="TextRenderer"/> property.
         /// </summary>
-        /// <remarks>
-        /// You can use a <see cref="NullBitmapFontRenderer"/> when you do not render text.
-        /// </remarks>
-        public Batcher() : this(NullBitmapFontRenderer.Instance)
-        {
-        }
+        public Batcher() : this(new FontsTextRenderer()) { }
 
         /// <summary>
         /// Create a batcher with a text renderer.

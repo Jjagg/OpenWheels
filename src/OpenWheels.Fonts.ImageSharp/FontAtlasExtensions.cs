@@ -17,20 +17,14 @@ namespace OpenWheels.Fonts.ImageSharp
         /// </summary>
         /// <param name="fa">Font atlas to render.</param>
         /// <returns>The created image.</returns>
-        public static Image<Alpha8> RenderAlphaImage(this FontAtlas fa)
-        {
-            return RenderImage(fa, new Alpha8(1f));
-        }
+        public static Image<Alpha8> RenderAlphaImage(this FontAtlas fa) => RenderImage(fa, new Alpha8(1f));
 
         /// <summary>
         /// Render a <see cref="FontAtlas"/> to an <see cref="Image"/> with 8-bit RGBA channels.
         /// </summary>
         /// <param name="fa">Font atlas to render.</param>
         /// <returns>The created image.</returns>
-        public static Image<Rgba32> RenderImage(this FontAtlas fa)
-        {
-            return RenderImage(fa, Rgba32.White);
-        }
+        public static Image<Rgba32> RenderImage(this FontAtlas fa) => RenderImage(fa, Rgba32.White);
 
         private static Image<T> RenderImage<T>(this FontAtlas fa, T color) where T : struct, IPixel<T>
         {
