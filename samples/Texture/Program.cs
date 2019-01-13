@@ -24,7 +24,7 @@ namespace Texture
             // See the Primitives sample for the basic concepts of OpenWheels
             var texStorage = new VeldridTextureStorage(graphicsDevice);
             var renderer = new VeldridRenderer(graphicsDevice, texStorage);
-            var batcher = new Batcher(texStorage, NullBitmapFontRenderer.Instance);
+            var batcher = new Batcher(NullBitmapFontRenderer.Instance);
             var checkerBoardTextureId = texStorage.LoadTexture("checkerboard.png");
 
             // OpenWheels defines a sprite as an image that's part of a texture
@@ -66,7 +66,7 @@ namespace Texture
                 batcher.FillRect(new RectangleF(200, 20, 100, 200), Color.White);
 
                 // Let's draw our subsprite
-                batcher.SetSprite(checkerBoardSubSprite);
+                batcher.SetSprite(checkerBoardSubSprite, subSpriteRect.Size);
                 batcher.FillRect(new RectangleF(350, 20, 100, 100), Color.White);
 
                 // We can only draw 1 texture in a single draw call, but since our subsprite actually uses the same

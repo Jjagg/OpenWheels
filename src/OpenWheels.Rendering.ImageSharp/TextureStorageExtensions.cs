@@ -43,9 +43,11 @@ namespace OpenWheels.Rendering.ImageSharp
         public static TextureFont LoadFont(this ITextureStorage storage, string path, float size, int fallbackCharacter = 0)
         {
             FontAtlasHelpers.CreateFont(path, size, out var glyphMap, out var image);
+            var width = image.Width;
+            var height = image.Height;
             var texId = RegisterImage(storage, image);
             image.Dispose();
-            return new TextureFont(glyphMap, texId, fallbackCharacter);
+            return new TextureFont(glyphMap.ToUvGlyphMap(width, height), texId, fallbackCharacter);
         }
 
         /// <summary>
@@ -58,9 +60,11 @@ namespace OpenWheels.Rendering.ImageSharp
         public static TextureFont LoadFont(this ITextureStorage storage, string path, float size, IEnumerable<Range<int>> ranges, int fallbackCharacter = 0)
         {
             FontAtlasHelpers.CreateFont(path, size, ranges, out var glyphMap, out var image);
+            var width = image.Width;
+            var height = image.Height;
             var texId = RegisterImage(storage, image);
             image.Dispose();
-            return new TextureFont(glyphMap, texId, fallbackCharacter);
+            return new TextureFont(glyphMap.ToUvGlyphMap(width, height), texId, fallbackCharacter);
         }
 
         /// <summary>
@@ -72,9 +76,11 @@ namespace OpenWheels.Rendering.ImageSharp
         public static TextureFont LoadSystemFont(this ITextureStorage storage, string name, float size, int fallbackCharacter = 0)
         {
             FontAtlasHelpers.CreateSystemFont(name, size, out var glyphMap, out var image);
+            var width = image.Width;
+            var height = image.Height;
             var texId = RegisterImage(storage, image);
             image.Dispose();
-            return new TextureFont(glyphMap, texId, fallbackCharacter);
+            return new TextureFont(glyphMap.ToUvGlyphMap(width, height), texId, fallbackCharacter);
         }
 
         /// <summary>
@@ -87,9 +93,11 @@ namespace OpenWheels.Rendering.ImageSharp
         public static TextureFont LoadSystemFont(this ITextureStorage storage, string name, float size, IEnumerable<Range<int>> ranges, int fallbackCharacter = 0)
         {
             FontAtlasHelpers.CreateSystemFont(name, size, ranges, out var glyphMap, out var image);
+            var width = image.Width;
+            var height = image.Height;
             var texId = RegisterImage(storage, image);
             image.Dispose();
-            return new TextureFont(glyphMap, texId, fallbackCharacter);
+            return new TextureFont(glyphMap.ToUvGlyphMap(width, height), texId, fallbackCharacter);
         }
 
 #endif
@@ -115,9 +123,11 @@ namespace OpenWheels.Rendering.ImageSharp
         public static TextureFont LoadFont(this ITextureStorage storage, Stream fontStream, float size, int fallbackCharacter = 0)
         {
             FontAtlasHelpers.CreateFont(fontStream, size, out var glyphMap, out var image);
+            var width = image.Width;
+            var height = image.Height;
             var texId = RegisterImage(storage, image);
             image.Dispose();
-            return new TextureFont(glyphMap, texId, fallbackCharacter);
+            return new TextureFont(glyphMap.ToUvGlyphMap(width, height), texId, fallbackCharacter);
         }
 
         /// <summary>
@@ -131,9 +141,11 @@ namespace OpenWheels.Rendering.ImageSharp
         public static TextureFont LoadFont(this ITextureStorage storage, Stream fontStream, float size, IEnumerable<Range<int>> ranges, int fallbackCharacter = 0)
         {
             FontAtlasHelpers.CreateFont(fontStream, size, ranges, out var glyphMap, out var image);
+            var width = image.Width;
+            var height = image.Height;
             var texId = RegisterImage(storage, image);
             image.Dispose();
-            return new TextureFont(glyphMap, texId, fallbackCharacter);
+            return new TextureFont(glyphMap.ToUvGlyphMap(width, height), texId, fallbackCharacter);
         }
 
         private static int RegisterImage(ITextureStorage storage, Image<Rgba32> img)

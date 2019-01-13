@@ -61,12 +61,10 @@ namespace OpenWheels.Rendering
 
             foreach (var gm in gms)
             {
-                var bounds = gm.Bounds;
-                var rect = new RectangleF(bounds.X, bounds.Y, bounds.Width, bounds.Height);
+                var rect = new RectangleF(gm.Bounds.X, gm.Bounds.Y, gm.Bounds.Width, gm.Bounds.Height);
                 var gd = textureFont.GetGlyphData(gm.Codepoint);
 
-                // TODO use UvSprite
-                batcher.SetSprite(textureFont.Texture, gd.Bounds);
+                batcher.SetUvSprite(textureFont.Texture, gd.Bounds);
                 batcher.FillRect(rect, color);
             }
         }

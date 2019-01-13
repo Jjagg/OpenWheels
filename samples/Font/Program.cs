@@ -37,7 +37,7 @@ namespace Font
             // Our batcher lets use make calls to render lots of different primitive shapes and text.
             // When we're done the batcher sends the draw calls to the renderer which will actually do the drawing.
             // textures using a string identifier. Internally in OpenWheels textures are identified by an integer.
-            var batcher = new Batcher(texStorage, textRenderer);
+            var batcher = new Batcher(textRenderer);
 
             // OpenWheels.Rendering.ImageSharp contains several extension methods to easily load 
             /// images and fonts into an ITextureStorage implementation.

@@ -68,11 +68,6 @@ namespace OpenWheels.Rendering
         private int _indicesInBatch;
 
         /// <summary>
-        /// The texture storage used by the batcher.
-        /// </summary>
-        public ITextureStorage TextureStorage { get; }
-
-        /// <summary>
         /// The vertex buffer used to batch vertices.
         /// </summary>
         public Vertex[] VertexBuffer => _vb;
@@ -202,30 +197,25 @@ namespace OpenWheels.Rendering
         public object BatchData { get; set; }
 
         /// <summary>
-        /// Create a <see cref="Batcher"/> with a <see cref="NullTextureStorage"/> and <see cref="NullBitmapFontRenderer"/>.
+        /// Create a <see cref="Batcher"/> with a <see cref="NullBitmapFontRenderer"/>.
         /// </summary>
         /// <remarks>
-        /// Using a <see cref="NullTextureStorage"/> and a <see cref="NullBitmapFontRenderer"/> can be
-        /// useful when using <see cref="DebugRenderer"/> or a similar renderer for debugging purposes.
-        ///
-        /// It can also be used for a renderer that does use handle textures.
+        /// You can use a <see cref="NullBitmapFontRenderer"/> when you do not render text.
         /// </remarks>
-        public Batcher() : this(NullTextureStorage.Instance, NullBitmapFontRenderer.Instance)
+        public Batcher() : this(NullBitmapFontRenderer.Instance)
         {
         }
 
         /// <summary>
-        /// Create a batcher with a texture storage.
+        /// Create a batcher with a text renderer.
         /// </summary>
-        /// <param name="textureStorage">Texture storage to use.</param>
         /// <param name="textRenderer">Text renderer to use.</param>
-        /// <exception cref="ArgumentNullException">If <paramref name="textureStorage" /> is <c>null</c>.</exception>
-        public Batcher(ITextureStorage textureStorage, IBitmapFontRenderer textRenderer)
+        /// <exception cref="ArgumentNullException">If <paramref name="textRenderer" /> is <c>null</c>.</exception>
+        public Batcher(IBitmapFontRenderer textRenderer)
         {
-            if (textureStorage == null)
-                throw new ArgumentNullException(nameof(textureStorage));
+            if (textRenderer == null)
+                throw new ArgumentNullException(nameof(textRenderer));
 
-            TextureStorage = textureStorage;
             TextRenderer = textRenderer;
 
             _vb = new Vertex[InitialMaxVertices];
@@ -276,21 +266,48 @@ namespace OpenWheels.Rendering
         /// Set the sprite for fills.
         /// </summary>
         /// <param name="sprite">The sprite to set.</param>
-        public void SetSprite(in Sprite sprite) => SetSprite(sprite.Texture, sprite.SrcRect);
+        /// <param name="texStorage">Texture storage that stores the sprite texture. Used to get the texture size.</param>
+        /// <exception cref="ArgumentNullException">If <paramref name="texStorage" /> is <c>null</c>.</exception>
+        public void SetSprite(in Sprite sprite, ITextureStorage texStorage)
+            => SetSprite(sprite.Texture, sprite.SrcRect, texStorage);
 
         /// <summary>
         /// Set the sprite for fills.
         /// </summary>
         /// <param name="texture">Texture identifier.</param>
         /// <param name="srcRect">Source rectangle of the sprite in the texture in pixels.</param>
-        public void SetSprite(int texture, in Rectangle srcRect)
+        /// <param name="texStorage">Texture storage that stores the sprite texture. Used to get the texture size.</param>
+        /// <exception cref="ArgumentNullException">If <paramref name="texStorage" /> is <c>null</c>.</exception>
+        public void SetSprite(int texture, in Rectangle srcRect, ITextureStorage texStorage)
         {
-            var texSize = TextureStorage.GetTextureSize(texture);
+            if (texStorage == null)
+                throw new ArgumentNullException(nameof(texStorage));
+
+            var size = texStorage.GetTextureSize(texture);
+            SetSprite(texture, srcRect, size);
+        }
+
+
+        /// <summary>
+        /// Set the sprite for fills.
+        /// </summary>
+        /// <param name="sprite">The sprite to set.</param>
+        /// <param name="size">Size of the texture. Used to convert <paramref name="srcRect"/> to a UV rect.</param>
+        public void SetSprite(in Sprite sprite, Size size) => SetSprite(sprite.Texture, sprite.SrcRect, size);
+
+        /// <summary>
+        /// Set the sprite for fills.
+        /// </summary>
+        /// <param name="texture">Texture identifier.</param>
+        /// <param name="srcRect">Source rectangle of the sprite in the texture in pixels.</param>
+        /// <param name="size">Size of the texture. Used to convert <paramref name="srcRect"/> to a UV rect.</param>
+        public void SetSprite(int texture, in Rectangle srcRect, Size size)
+        {
             var uvRect = new RectangleF(
-                    (float) srcRect.X / texSize.Width,
-                    (float) srcRect.Y / texSize.Height,
-                    (float) srcRect.Width / texSize.Width,
-                    (float) srcRect.Height / texSize.Height);
+                    (float) srcRect.X / size.Width,
+                    (float) srcRect.Y / size.Height,
+                    (float) srcRect.Width / size.Width,
+                    (float) srcRect.Height / size.Height);
 
             SetUvSprite(texture, uvRect);
         }

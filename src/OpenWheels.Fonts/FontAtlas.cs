@@ -9,7 +9,7 @@ namespace OpenWheels.Fonts
     /// </summary>
     public class FontAtlas
     {
-        private readonly GlyphMap[] _glyphMaps;
+        private readonly PixelGlyphMap[] _glyphMaps;
 
         /// <summary>
         /// Width of the atlas.
@@ -38,7 +38,7 @@ namespace OpenWheels.Fonts
         /// <param name="height">Height of the font atlas.</param>
         /// <param name="dpi">Dots per inch.</param>
         /// <param name="glyphMaps">The glyph maps on the font atlas.</param>
-        public FontAtlas(int width, int height, Vector2 dpi, GlyphMap[] glyphMaps)
+        public FontAtlas(int width, int height, Vector2 dpi, PixelGlyphMap[] glyphMaps)
         {
             Width = width;
             Height = height;
@@ -50,13 +50,13 @@ namespace OpenWheels.Fonts
         /// Get a glyph map by index.
         /// </summary>
         /// <param name="index">Index of the glyph map.</param>
-        public GlyphMap this[int index] => _glyphMaps[index];
+        public PixelGlyphMap this[int index] => _glyphMaps[index];
 
         /// <summary>
         /// Get a glyph map by <see cref="FontData"/>.
         /// </summary>
         /// <param name="fontData">Font data to get the glyph map for.</param>
-        public GlyphMap this[FontData fontData] => _glyphMaps.First(g => FontMatchesFontData(g.Font, fontData));
+        public PixelGlyphMap this[FontData fontData] => _glyphMaps.First(g => FontMatchesFontData(g.Font, fontData));
 
         /// <summary>
         /// Find a <see cref="GlyphMap"/> exactly matching the given <paramref name="fontData"/>.
@@ -64,7 +64,7 @@ namespace OpenWheels.Fonts
         /// <param name="fontData">The font data to get the glyph map for.</param>
         /// <param name="glyphMap">The retrieved glyph map if the font data is found, <c>null</c> if it isn't.</param>
         /// <returns><c>true</c> if the font data is found, <c>false</c> if it isn't.</returns>
-        public bool TryGetGlyphMap(in FontData fontData, out GlyphMap glyphMap)
+        public bool TryGetGlyphMap(in FontData fontData, out PixelGlyphMap glyphMap)
         {
             glyphMap = null;
             for (var i = 0; i < _glyphMaps.Length; i++)

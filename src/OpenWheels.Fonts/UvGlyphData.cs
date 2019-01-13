@@ -1,32 +1,32 @@
-﻿namespace OpenWheels.Fonts
+namespace OpenWheels.Fonts
 {
     /// <summary>
-    /// Data for a glyph with bounds in pixels.
+    /// Data for a glyph with bounds in UV coordinates.
     /// </summary>
-    public struct GlyphData
+    public struct UvGlyphData
     {
         /// <summary>
         /// UTF-32 encoded character of the glyph.
         /// </summary>
         public int Character { get; }
-        // TODO support glyphs more than 1 codepoint
 
         /// <summary>
-        /// Bounds of the glyph on the texture atlas in pixels.
+        /// Bounds of the glyph on the texture atlas in UV coordinates.
         /// </summary>
-        public Rectangle Bounds { get; }
+        public RectangleF Bounds { get; }
 
         /// <summary>
         /// Create a new <see cref="GlyphData"/> instance.
         /// </summary>
         /// <param name="character">UTF-32 encoded character of the glyph</param>
-        /// <param name="bounds">Bounds of the glyph on the texture atlas in pixels.</param>
-        public GlyphData(int character, Rectangle bounds)
+        /// <param name="bounds">Bounds of the glyph on the texture atlas in UV coordinates.</param>
+        public UvGlyphData(int character, RectangleF bounds)
         {
             Character = character;
             Bounds = bounds;
         }
 
-        internal static GlyphData Default = new GlyphData();
+        internal static UvGlyphData Default = new UvGlyphData();
     }
+
 }

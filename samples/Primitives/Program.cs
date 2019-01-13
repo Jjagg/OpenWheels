@@ -37,7 +37,7 @@ namespace Primitives
             // Our batcher lets use make calls to render lots of different primitive shapes and text.
             // When we're done the batcher can export draw calls so the renderer can use them do the drawing.
             // We won't use text rendering in this sample so we use the dummy text renderer.
-            var batcher = new Batcher(texStorage, NullBitmapFontRenderer.Instance);
+            var batcher = new Batcher(NullBitmapFontRenderer.Instance);
 
             var first = true;
 
@@ -53,7 +53,6 @@ namespace Primitives
                 batcher.SetTexture(blank);
 
                 // Let's draw some primitives. The API is very obvious, you can use IntelliSense to find supported shapes.
-
                 batcher.FillRect(new RectangleF(10, 10, 100, 100), Color.LimeGreen);
 
                 // Note that subsequent line segments are connected at their corners
