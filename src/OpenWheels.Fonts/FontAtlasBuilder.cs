@@ -207,7 +207,10 @@ namespace OpenWheels.Fonts
             for (var i = 0; i < _atlasEntries.Count; i++)
                 characterBounds[i] = packer.Insert(characterSizes[i]);
 
-            var glyphMaps = new GlyphMap[_atlasEntries.Count];
+            var uw = (float) packer.UsedWidth;
+            var uh = (float) packer.UsedHeight;
+
+            var glyphMaps = new PixelGlyphMap[_atlasEntries.Count];
             for (var i = 0; i < _atlasEntries.Count; i++)
             {
                 var glyphData = new GlyphData[characterSizes[i].Length];
@@ -216,12 +219,13 @@ namespace OpenWheels.Fonts
                 {
                     foreach (var c in cr)
                     {
-                        glyphData[gi] = new GlyphData(c, characterBounds[i][gi]);
+                        var rect = characterBounds[i][gi];
+                        glyphData[gi] = new GlyphData(c,rect);
                         gi++;
                     }
                 }
 
-                glyphMaps[i] = new GlyphMap(fonts[i], characterRanges[i], glyphData);
+                glyphMaps[i] = new PixelGlyphMap(fonts[i], characterRanges[i], glyphData);
             }
 
             return new FontAtlas(packer.UsedWidth, packer.UsedHeight, dpiVal, glyphMaps);

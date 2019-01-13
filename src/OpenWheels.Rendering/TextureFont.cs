@@ -9,8 +9,8 @@ namespace OpenWheels.Rendering
     /// </summary>
     public class TextureFont
     {
-        private GlyphMap _glyphMap;
-        private GlyphData _fallbackGlyphData;
+        private UvGlyphMap _glyphMap;
+        private UvGlyphData _fallbackGlyphData;
 
         /// <summary>
         /// Get the texture id of the texture that contains the font atlas pixel data.
@@ -60,7 +60,7 @@ namespace OpenWheels.Rendering
         ///   Defaults to U+FFFD, the replacement character (question mark in a diamond).
         /// </param>
         /// <exception cref="ArgumentNullException">If <paramref name="glyphMap" /> is <c>null</c>.</exception>
-        public TextureFont(GlyphMap glyphMap, int texture, int fallbackCharacter = '\uFFFD')
+        public TextureFont(UvGlyphMap glyphMap, int texture, int fallbackCharacter = '\uFFFD')
         {
             if (glyphMap == null)
                 throw new ArgumentNullException(nameof(glyphMap));
@@ -78,7 +78,7 @@ namespace OpenWheels.Rendering
         /// <exception cref="ArgumentOutOfRangeException">
         ///   If the character glyph is not found and no fallback character is set.
         /// </exception>
-        public ref readonly GlyphData GetGlyphData(int codePoint)
+        public ref readonly UvGlyphData GetGlyphData(int codePoint)
             => ref _fallbackGlyphData.Character == 0 ? 
                 ref _glyphMap.GetGlyphData(codePoint) :
                 ref _glyphMap.GetGlyphData(codePoint, _fallbackGlyphData);
