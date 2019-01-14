@@ -32,12 +32,10 @@ namespace Font
             var renderer = new VeldridRenderer(graphicsDevice, texStorage);
 
             // To render text Batcher needs an IBitmapFontRenderer implementation.
-            var textRenderer = new FontsTextRenderer();
-
             // Our batcher lets use make calls to render lots of different primitive shapes and text.
             // When we're done the batcher sends the draw calls to the renderer which will actually do the drawing.
             // textures using a string identifier. Internally in OpenWheels textures are identified by an integer.
-            var batcher = new Batcher(textRenderer);
+            var batcher = new Batcher();
 
             // OpenWheels.Rendering.ImageSharp contains several extension methods to easily load 
             /// images and fonts into an ITextureStorage implementation.
@@ -50,7 +48,6 @@ namespace Font
             // set using the Batcher by calling `SetFont(fontId)`.
 
             var font = texStorage.LoadFont("Resources/Roboto-Medium.ttf", 24, (int) '?');
-            textRenderer.AddFont(font);
 
             var first = true;
 
@@ -62,17 +59,14 @@ namespace Font
                 // Start a new batch
                 batcher.Start();
 
-                // FontInfo represents a font at a given size
-                var fi = font.FontInfo;
-
                 // Note that drawing text changes the active texture to the font atlas texture.
                 // So if you're rendering other stuff, make sure you set a texture before drawing anything else
-                batcher.DrawText(fi, "Hello World!", new Vector2(100f), Color.Black);
+                batcher.DrawText(font, "Hello World!", new Vector2(100f), Color.Black);
 
                 // We rotate and translate this one a little bit for style 😎
                 batcher.PositionTransform = Matrix3x2.CreateTranslation(150, 0) * Matrix3x2.CreateRotation((float)Math.PI / 8f);
                 var tlo = new TextLayoutOptions(Vector2.Zero, va: TextAlignment.End);
-                batcher.DrawText(fi, "This is rendered from a font atlas!", tlo, Color.DarkRed);
+                batcher.DrawText(font, "This is rendered from a font atlas!", tlo, Color.DarkRed);
 
                 // Reset the transformation matrix
                 batcher.PositionTransform = Matrix3x2.Identity;

@@ -12,17 +12,15 @@ namespace OpenWheels.Rendering
         /// Render the requested text to a batcher.
         /// </summary>
         /// <param name="batcher">Batcher to render text to.</param>
-        /// <param name="fontInfo">Font and size to use.</param>
+        /// <param name="font">Font to use.</param>
         /// <param name="text">Text to render.</param>
+        /// <param name="scale">Scaling factor to render text at.</param>
         /// <param name="tlo">Text layout options.</param>
         /// <param name="color">Color of the text.</param>
         /// <exception cref="ArgumentNullException">If <paramref name="batcher"/> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentException">
-        ///   If the passed font is not prerendered to the bitmap and the implementation
-        ///   does not support dynamic font atlas creation.
-        /// </exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="font"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentNullException">If <paramref name="text"/> is <c>null</c>.</exception>
-        void RenderText(Batcher batcher, in FontInfo fontInfo, string text, in TextLayoutOptions tlo, Color color);
+        void RenderText(Batcher batcher, TextureFont font, string text, float scale, in TextLayoutOptions tlo, Color color);
     }
 
     /// <summary>
@@ -35,6 +33,6 @@ namespace OpenWheels.Rendering
         /// </summary>
         public static NullBitmapFontRenderer Instance { get; } = new NullBitmapFontRenderer();
         private NullBitmapFontRenderer() { }
-        public void RenderText(Batcher batcher, in FontInfo fontInfo, string text, in TextLayoutOptions tlo, Color color) { }
+        public void RenderText(Batcher batcher, TextureFont font, string text, float scale, in TextLayoutOptions tlo, Color color) { }
     }
 }

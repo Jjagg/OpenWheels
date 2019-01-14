@@ -198,8 +198,6 @@ namespace OpenWheels.Rendering
 
         /// <summary>
         /// Create a <see cref="Batcher"/> with a new <see cref="FontsTextRenderer"/>.
-        /// Note that you'll have to preload fonts before rendering text using <see cref="FontsTextRenderer.AddFont"/>.
-        /// You can retrieve the text renderer via the <see cref="TextRenderer"/> property.
         /// </summary>
         public Batcher() : this(new FontsTextRenderer()) { }
 
@@ -207,7 +205,10 @@ namespace OpenWheels.Rendering
         /// Create a batcher with a text renderer.
         /// </summary>
         /// <param name="textRenderer">Text renderer to use.</param>
-        /// <exception cref="ArgumentNullException">If <paramref name="textRenderer" /> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentNullException">
+        ///   If <paramref name="textRenderer" /> is <c>null</c>.
+        ///   Pass <see cref="NullBitmapFontRenderer.Instance"/> to use a text renderer that does nothing.
+        /// </exception>
         public Batcher(IBitmapFontRenderer textRenderer)
         {
             if (textRenderer == null)
@@ -859,40 +860,33 @@ namespace OpenWheels.Rendering
         /// <summary>
         /// Render text. Changes the active <see cref="Texture"/> if required.
         /// </summary>
-        /// <param name="fontName">The font to use.</param>
-        /// <param name="size">Point size to render the font at.</param>
+        /// <param name="font">The font to use.</param>
         /// <param name="text">The text to draw.</param>
         /// <param name="position">Position to start rendering the font (top left).</param>
         /// <param name="color">Color of the text.</param>
-        public void DrawText(string fontName, float size, string text, Vector2 position, Color color)
-        {
-            var tlo = new TextLayoutOptions(position);
-            var fontInfo = new FontInfo(fontName, size);
-            this.DrawText(fontInfo, text, tlo, color);
-        }
+        public void DrawText(TextureFont font, string text, Vector2 position, Color color)
+            => DrawText(font, text, 1f, new TextLayoutOptions(position), color);
 
         /// <summary>
         /// Render text. Changes the active <see cref="Texture"/> if required.
         /// </summary>
-        /// <param name="fontInfo">Name and size of the font.</param>
-        /// <param name="text">The text to draw.</param>
-        /// <param name="position">Position to start rendering the font (top left).</param>
-        /// <param name="color">Color of the text.</param>
-        public void DrawText(in FontInfo fontInfo, string text, Vector2 position, Color color)
-        {
-            var tlo = new TextLayoutOptions(position);
-            this.DrawText(fontInfo, text, tlo, color);
-        }
-
-        /// <summary>
-        /// Render text. Changes the active <see cref="Texture"/> if required.
-        /// </summary>
-        /// <param name="fontInfo">Name and size of the font.</param>
+        /// <param name="font">The font to use.</param>
         /// <param name="text">The text to draw.</param>
         /// <param name="tlo">Layout options for rendering the text.</param>
         /// <param name="color">Color of the text.</param>
-        public void DrawText(FontInfo fontInfo, string text, in TextLayoutOptions tlo, Color color)
-            => TextRenderer.RenderText(this, fontInfo, text, tlo, color);
+        public void DrawText(TextureFont font, string text, in TextLayoutOptions tlo, Color color)
+            => DrawText(font, text, 1f, tlo, color);
+
+        /// <summary>
+        /// Render text. Changes the active <see cref="Texture"/> if required.
+        /// </summary>
+        /// <param name="font">The font to use.</param>
+        /// <param name="text">The text to draw.</param>
+        /// <param name="scale">Scaling factor to render text at.</param>
+        /// <param name="tlo">Layout options for rendering the text.</param>
+        /// <param name="color">Color of the text.</param>
+        public void DrawText(TextureFont font, string text, float scale, in TextLayoutOptions tlo, Color color)
+            => TextRenderer.RenderText(this, font, text, scale, tlo, color);
 
         #endregion
 
@@ -974,9 +968,13 @@ namespace OpenWheels.Rendering
 
         /// <summary>
         /// Call this to clear flushed batches and prepare for a new frame.
+        /// Does nothing if the batcher was not finished, so this can called to ensure draw calls can be made.
         /// </summary>
         public void Start()
         {
+            if (!_finished)
+                return;
+
             Clear();
             _finished = false;
         }

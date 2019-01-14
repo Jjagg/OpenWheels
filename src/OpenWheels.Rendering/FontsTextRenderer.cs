@@ -11,39 +11,18 @@ namespace OpenWheels.Rendering
     /// </summary>
     public class FontsTextRenderer : IBitmapFontRenderer
     {
-        private List<TextureFont> _textureFonts;
-
         /// <summary>
         /// Create a new FontsTextRenderer.
         /// </summary>
         public FontsTextRenderer()
         {
-            _textureFonts = new List<TextureFont>();
         }
 
-        /// <summary>
-        /// Add a texture font to the prerendered fonts for this renderer.
-        /// </summary>
-        /// <exception cref="ArgumentNullException">If <paramref name="textureFont"/> is <c>null</c>.</exception>
-        public void AddFont(TextureFont textureFont)
+        /// <inheritdoc/>
+        public void RenderText(Batcher batcher, TextureFont textureFont, string text, float scale, in TextLayoutOptions tlo, Color color)
         {
             if (textureFont == null)
                 throw new ArgumentNullException(nameof(textureFont));
-
-            _textureFonts.Add(textureFont);
-        }
-
-        /// <inhertidoc/>
-        /// <exception cref="ArgumentException">
-        ///   If no font matching <paramref name="fontInfo"/> was added with <see name="AddFont"/>
-        ///   before calling this method.
-        /// </exception>
-        public void RenderText(Batcher batcher, in FontInfo fontInfo, string text, in TextLayoutOptions tlo, Color color)
-        {
-            var textureFont = GetTextureFont(fontInfo, out var scale);
-
-            if (textureFont == null)
-                throw new ArgumentException($"The font '{fontInfo.Name}' was not rendered to the atlas.", nameof(fontInfo.Name));
 
             var slFont = textureFont.Font;
             // TODO other dpi support
@@ -97,32 +76,6 @@ namespace OpenWheels.Rendering
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-        }
-
-        private TextureFont GetTextureFont(in FontInfo fi, out float scale)
-        {
-            // TODO font style
-
-            var bestSize = -1f;
-            TextureFont tf = null;
-
-            // find the closest bigger size in the atlas for the font
-            // or the closest smaller size if no bigger size exists
-            foreach (var candidate in _textureFonts)
-            {
-                if (!candidate.Font.Name.Equals(fi.Name))
-                    continue;
-
-                if ((bestSize < fi.Size && bestSize < candidate.Font.Size) ||
-                    (bestSize > fi.Size && candidate.Font.Size > fi.Size && candidate.Font.Size < bestSize))
-                {
-                    bestSize = candidate.Font.Size;
-                    tf = candidate;
-                }
-            }
-
-            scale = tf == null ? 0 : fi.Size / tf.Font.Size;
-            return tf;
         }
     }
 }
