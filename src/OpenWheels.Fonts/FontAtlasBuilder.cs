@@ -185,6 +185,7 @@ namespace OpenWheels.Fonts
                 var characterIndex = 0;
                 for (var characterRangeIndex = 0; characterRangeIndex < e.CharacterRanges.Count; characterRangeIndex++)
                 {
+                    // TODO reduce allocations
                     var cr = e.CharacterRanges[characterRangeIndex];
                     characterRanges[i][characterRangeIndex] = new CharacterRange(cr, characterIndex);
 
@@ -192,7 +193,7 @@ namespace OpenWheels.Fonts
                     for (var c = cr.Start; c <= cr.End; c++)
                         sb.Append(char.ConvertFromUtf32(c));
 
-                    if (!TextMeasurer.TryMeasureCharacterBounds(sb.ToString(), renderOptions, out var glyphMetrics))
+                    if (!TextMeasurer.TryMeasureCharacterBounds(sb.ToString().AsSpan(), renderOptions, out var glyphMetrics))
                         continue;
 
                     foreach (var gm in glyphMetrics)

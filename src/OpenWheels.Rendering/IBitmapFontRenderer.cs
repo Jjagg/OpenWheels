@@ -17,10 +17,11 @@ namespace OpenWheels.Rendering
         /// <param name="scale">Scaling factor to render text at.</param>
         /// <param name="tlo">Text layout options.</param>
         /// <param name="color">Color of the text.</param>
+        /// <returns>The bounding rectangle for the rendered text.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="batcher"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentNullException">If <paramref name="font"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentNullException">If <paramref name="text"/> is <c>null</c>.</exception>
-        void RenderText(Batcher batcher, TextureFont font, string text, float scale, in TextLayoutOptions tlo, Color color);
+        RectangleF RenderText(Batcher batcher, TextureFont font, ReadOnlySpan<char> text, float scale, in TextLayoutOptions tlo, Color color);
     }
 
     /// <summary>
@@ -33,6 +34,6 @@ namespace OpenWheels.Rendering
         /// </summary>
         public static NullBitmapFontRenderer Instance { get; } = new NullBitmapFontRenderer();
         private NullBitmapFontRenderer() { }
-        public void RenderText(Batcher batcher, TextureFont font, string text, float scale, in TextLayoutOptions tlo, Color color) { }
+        public RectangleF RenderText(Batcher batcher, TextureFont font, ReadOnlySpan<char> text, float scale, in TextLayoutOptions tlo, Color color) => default;
     }
 }

@@ -865,7 +865,39 @@ namespace OpenWheels.Rendering
         /// <param name="position">Position to start rendering the font (top left).</param>
         /// <param name="color">Color of the text.</param>
         public void DrawText(TextureFont font, string text, Vector2 position, Color color)
+            => DrawText(font, text.AsSpan(), 1f, new TextLayoutOptions(position), color);
+
+        /// <summary>
+        /// Render text. Changes the active <see cref="Texture"/> if required.
+        /// </summary>
+        /// <param name="font">The font to use.</param>
+        /// <param name="text">The text to draw.</param>
+        /// <param name="position">Position to start rendering the font (top left).</param>
+        /// <param name="color">Color of the text.</param>
+        public void DrawText(TextureFont font, ReadOnlySpan<char> text, Vector2 position, Color color)
             => DrawText(font, text, 1f, new TextLayoutOptions(position), color);
+
+        /// <summary>
+        /// Render text. Changes the active <see cref="Texture"/> if required.
+        /// </summary>
+        /// <param name="font">The font to use.</param>
+        /// <param name="text">The text to draw.</param>
+        /// <param name="position">Position to start rendering the font (top left).</param>
+        /// <param name="scale">Scaling factor to render text at.</param>
+        /// <param name="color">Color of the text.</param>
+        public void DrawText(TextureFont font, string text, Vector2 position, float scale, Color color)
+            => DrawText(font, text.AsSpan(), scale, new TextLayoutOptions(position), color);
+
+        /// <summary>
+        /// Render text. Changes the active <see cref="Texture"/> if required.
+        /// </summary>
+        /// <param name="font">The font to use.</param>
+        /// <param name="text">The text to draw.</param>
+        /// <param name="position">Position to start rendering the font (top left).</param>
+        /// <param name="scale">Scaling factor to render text at.</param>
+        /// <param name="color">Color of the text.</param>
+        public void DrawText(TextureFont font, ReadOnlySpan<char> text, Vector2 position, float scale, Color color)
+            => DrawText(font, text, scale, new TextLayoutOptions(position), color);
 
         /// <summary>
         /// Render text. Changes the active <see cref="Texture"/> if required.
@@ -874,7 +906,19 @@ namespace OpenWheels.Rendering
         /// <param name="text">The text to draw.</param>
         /// <param name="tlo">Layout options for rendering the text.</param>
         /// <param name="color">Color of the text.</param>
-        public void DrawText(TextureFont font, string text, in TextLayoutOptions tlo, Color color)
+        /// <returns>The bounding rectangle for the rendered text.</returns>
+        public RectangleF DrawText(TextureFont font, string text, in TextLayoutOptions tlo, Color color)
+            => DrawText(font, text.AsSpan(), 1f, tlo, color);
+
+        /// <summary>
+        /// Render text. Changes the active <see cref="Texture"/> if required.
+        /// </summary>
+        /// <param name="font">The font to use.</param>
+        /// <param name="text">The text to draw.</param>
+        /// <param name="tlo">Layout options for rendering the text.</param>
+        /// <param name="color">Color of the text.</param>
+        /// <returns>The bounding rectangle for the rendered text.</returns>
+        public RectangleF DrawText(TextureFont font, ReadOnlySpan<char> text, in TextLayoutOptions tlo, Color color)
             => DrawText(font, text, 1f, tlo, color);
 
         /// <summary>
@@ -885,7 +929,20 @@ namespace OpenWheels.Rendering
         /// <param name="scale">Scaling factor to render text at.</param>
         /// <param name="tlo">Layout options for rendering the text.</param>
         /// <param name="color">Color of the text.</param>
-        public void DrawText(TextureFont font, string text, float scale, in TextLayoutOptions tlo, Color color)
+        /// <returns>The bounding rectangle for the rendered text.</returns>
+        public RectangleF DrawText(TextureFont font, string text, float scale, in TextLayoutOptions tlo, Color color)
+            => DrawText(font, text.AsSpan(), scale, tlo, color);
+
+        /// <summary>
+        /// Render text. Changes the active <see cref="Texture"/> if required.
+        /// </summary>
+        /// <param name="font">The font to use.</param>
+        /// <param name="text">The text to draw.</param>
+        /// <param name="scale">Scaling factor to render text at.</param>
+        /// <param name="tlo">Layout options for rendering the text.</param>
+        /// <param name="color">Color of the text.</param>
+        /// <returns>The bounding rectangle for the rendered text.</returns>
+        public RectangleF DrawText(TextureFont font, ReadOnlySpan<char> text, float scale, in TextLayoutOptions tlo, Color color)
             => TextRenderer.RenderText(this, font, text, scale, tlo, color);
 
         #endregion

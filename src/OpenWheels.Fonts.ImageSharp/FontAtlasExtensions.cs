@@ -31,8 +31,7 @@ namespace OpenWheels.Fonts.ImageSharp
             // TODO we need the extra pixels here because ImageSharp renders out of bounds and crashes.
             var img = new Image<T>(Configuration.Default, fa.Width + 2, fa.Height);
             var tgo = new TextGraphicsOptions(true);
-            tgo.HorizontalAlignment = HorizontalAlignment.Left;
-            tgo.VerticalAlignment = VerticalAlignment.Top;
+            tgo.AntialiasSubpixelDepth = 8;
 
             for (var i = 0; i < fa.MapCount; i++)
             {
@@ -45,7 +44,7 @@ namespace OpenWheels.Fonts.ImageSharp
                     var charStr = char.ConvertFromUtf32(gd.Character);
                     var pos = (Vector2) gd.Bounds.TopLeft;
                     var ro = new RendererOptions(font);
-                    TextMeasurer.TryMeasureCharacterBounds(charStr, ro, out var cbs);
+                    TextMeasurer.TryMeasureCharacterBounds(charStr.AsSpan(), ro, out var cbs);
                     var cb = cbs[0];
                     img.Mutate(c => c.DrawText(tgo, charStr, font, color, pos - (Vector2) cb.Bounds.Location));
                 }
