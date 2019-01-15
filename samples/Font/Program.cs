@@ -7,6 +7,7 @@ using OpenWheels.Rendering.ImageSharp;
 using OpenWheels.Veldrid;
 
 using SixLabors.Fonts;
+using SixLabors.ImageSharp;
 
 using Veldrid;
 using Veldrid.Sdl2;
@@ -38,7 +39,7 @@ namespace Font
             var batcher = new Batcher();
 
             // OpenWheels.Rendering.ImageSharp contains several extension methods to easily load 
-            /// images and fonts into an ITextureStorage implementation.
+            // images and fonts into an ITextureStorage implementation.
             // Using this library is the easiest way to handle font and texture loading, but it's a separate lib so you can
             // use another solution if you prefer.
 
@@ -47,7 +48,12 @@ namespace Font
             // The created image is registered with the renderer and the font can be
             // set using the Batcher by calling `SetFont(fontId)`.
 
-            var font = texStorage.LoadFont("Resources/Roboto-Medium.ttf", 24, (int) '?');
+            // m6x11 font by Daniel Linssen: https://managore.itch.io
+            // Note that this is a pixel perfect font and so it will look good even though OpenWheels has pretty bad text rendering.
+            var font = texStorage.LoadFont("Resources/m6x11.ttf", 32, (int) '?');
+
+            // Google's Roboto font
+            //var font = texStorage.LoadFont("Resources/Roboto-Medium.ttf", 32, (int) '?');
 
             var first = true;
 
@@ -61,15 +67,16 @@ namespace Font
 
                 // Note that drawing text changes the active texture to the font atlas texture.
                 // So if you're rendering other stuff, make sure you set a texture before drawing anything else
-                batcher.DrawText(font, "Hello World!", new Vector2(100f), Color.Black);
-
-                // We rotate and translate this one a little bit for style 😎
-                batcher.PositionTransform = Matrix3x2.CreateTranslation(150, 0) * Matrix3x2.CreateRotation((float)Math.PI / 8f);
-                var tlo = new TextLayoutOptions(Vector2.Zero, va: TextAlignment.End);
-                batcher.DrawText(font, "This is rendered from a font atlas!", tlo, Color.DarkRed);
+                batcher.DrawText(font, "Hello, World!", new Vector2(100f, 80f), Color.Black);
+                batcher.DrawText(font, "This is rendered from a font atlas!", new Vector2(100f, 130f), .5f,  Color.DarkRed);
 
                 // Reset the transformation matrix
                 batcher.PositionTransform = Matrix3x2.Identity;
+
+                // Let's also render the font atlas so we can see how this works
+                batcher.SetTexture(font.Texture);
+                var atlasSize = texStorage.GetTextureSize(font.Texture);
+                batcher.FillRect(new RectangleF(100, 170, atlasSize.Width, atlasSize.Height), Color.Black);
 
                 // Finish the frame and let the renderer draw everything to the back buffer.
                 batcher.Render(renderer);

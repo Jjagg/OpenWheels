@@ -27,9 +27,10 @@ namespace Texture
             var batcher = new Batcher(NullBitmapFontRenderer.Instance);
             var checkerBoardTextureId = texStorage.LoadTexture("checkerboard.png");
 
-            // OpenWheels defines a sprite as an image that's part of a texture
-            // To create a sprite, we pass a texture and a region of that texture (in pixels) that contains the actual image
-            // let's add a sprite that draws 3/4th of the checkerboard
+            // OpenWheels defines a sprite as an image that's part of a texture.
+            // To create a sprite, we pass a texture and a region of that texture that contains the image
+            // We can define the region either in pixels (using Sprite) or in UV coordinates (using UvSprite).
+            // Let's create a sprite that draws 3/4th of the checkerboard using UvSprite.
             // So if our original texture looks like this:
             //         |##  |
             //         |##  |
@@ -41,8 +42,8 @@ namespace Texture
             //         |  #|
 
             var cbSize = texStorage.GetTextureSize(checkerBoardTextureId);
-            var subSpriteRect = new Rectangle(0, 0, (cbSize.Width * 3) / 4, (cbSize.Height * 3) / 4);
-            var checkerBoardSubSprite = new Sprite(checkerBoardTextureId, subSpriteRect);
+            var subSpriteRect = new RectangleF(0, 0, 0.75f, 0.75f);
+            var checkerBoardSubSprite = new UvSprite(checkerBoardTextureId, subSpriteRect);
 
             var frame = 0;
 
@@ -66,7 +67,7 @@ namespace Texture
                 batcher.FillRect(new RectangleF(200, 20, 100, 200), Color.White);
 
                 // Let's draw our subsprite
-                batcher.SetSprite(checkerBoardSubSprite, subSpriteRect.Size);
+                batcher.SetUvSprite(checkerBoardSubSprite);
                 batcher.FillRect(new RectangleF(350, 20, 100, 100), Color.White);
 
                 // We can only draw 1 texture in a single draw call, but since our subsprite actually uses the same
@@ -88,7 +89,7 @@ namespace Texture
                 // let's make our texture loop in length while keeping it's aspect ratio and UV across its width.
 
                 // The sampler should wrap to be able to loop the texture (the default sampler state is LinearClamp)
-                // This state sticks across frames, so we could set it before the render loop as well
+                // Render state sticks across frames, so we could set it before the render loop as well
                 batcher.SamplerState = SamplerState.LinearWrap;
                 var v3 = new Vector2(200, 280);
                 var v4 = new Vector2(300, 380);
