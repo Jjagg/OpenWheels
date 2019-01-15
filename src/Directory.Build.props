@@ -14,6 +14,11 @@
     <PackageOutputPath>$(MSBuildThisFileDirectory)..\bin\$(Configuration)</PackageOutputPath>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <ImageSharpVersion>1.0.0-beta0005</ImageSharpVersion>
+    <SixLaborsFontsVersion>1.0.0-dev000137</SixLaborsFontsVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Nerdbank.GitVersioning">
       <Version>3.0.4-beta</Version>
