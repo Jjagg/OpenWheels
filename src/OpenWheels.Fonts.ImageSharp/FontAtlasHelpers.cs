@@ -10,9 +10,6 @@ namespace OpenWheels.Fonts.ImageSharp
     /// </summary>
     public static class FontAtlasHelpers
     {
-
-#if !NETSTANDARD1_1
-
         /// <summary>
         /// Create a <see cref="PixelGlyphMap"/> for the given system font. Includes Unicode latin characters.
         /// </summary>
@@ -68,8 +65,6 @@ namespace OpenWheels.Fonts.ImageSharp
             fab.AddFont(path, size, ranges);
             RenderGlyphMap(fab, out glyphMap, out image);
         }
-
-#endif
 
         /// <summary>
         /// Create a <see cref="PixelGlyphMap"/> for the given system font. Includes Unicode latin characters.

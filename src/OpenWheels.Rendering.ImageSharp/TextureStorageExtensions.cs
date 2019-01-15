@@ -19,9 +19,6 @@ namespace OpenWheels.Rendering.ImageSharp
     /// </summary>
     public static class TextureStorageExtensions
     {
-
-#if !NETSTANDARD1_1
-
         /// <summary>
         /// Load an image from a path and register it in the texture storage.
         /// </summary>
@@ -99,8 +96,6 @@ namespace OpenWheels.Rendering.ImageSharp
             image.Dispose();
             return new TextureFont(glyphMap.ToUvGlyphMap(width, height), texId, fallbackCharacter);
         }
-
-#endif
 
         /// <summary>
         /// Load an image from a stream and register it in the texture storage.

@@ -44,8 +44,6 @@ namespace OpenWheels.Fonts
             _atlasEntries.Clear();
         }
 
-#if !NETSTANDARD1_1
-
         /// <summary>
         /// Add a system font with the given name.
         /// </summary>
@@ -96,8 +94,6 @@ namespace OpenWheels.Fonts
             var ff = _fontCollection.Install(fontPath);
             return AddInternal(ff.Name, size, characterRanges, style, false);
         }
-
-#endif
 
         /// <summary>
         /// Add a font from a stream.
@@ -171,11 +167,7 @@ namespace OpenWheels.Fonts
 
                 Font font;
                 if (e.IsSystemFont)
-#if !NETSTANDARD1_1
                     font = SystemFonts.CreateFont(e.Font.FamilyName, e.Font.Size, e.Font.Style);
-#else
-                    throw new Exception("System fonts are not supported in the .NET Standard 1.1 version of this library.");
-#endif
                 else
                     font = _fontCollection.CreateFont(e.Font.FamilyName, e.Font.Size, e.Font.Style);
 
