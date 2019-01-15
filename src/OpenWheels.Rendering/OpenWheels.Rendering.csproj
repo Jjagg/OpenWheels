@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.1;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard1.3;netstandard2.0</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
     <Description>Backend-agnostic 2D geometry batcher for GPU rendering.</Description>
