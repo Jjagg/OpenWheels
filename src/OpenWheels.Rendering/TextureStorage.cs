@@ -20,8 +20,16 @@ namespace OpenWheels.Rendering
         public abstract Size GetTextureSize(int id);
         /// <inheritdoc />
         public abstract TextureFormat GetTextureFormat(int id);
+
         /// <inheritdoc />
-        public abstract void SetData<TData>(int id, ReadOnlySpan<TData> data) where TData : struct;
+        public virtual void SetData<TData>(int id, ReadOnlySpan<TData> data) where TData : struct
+        {
+            (var w, var h) = GetTextureSize(id);
+            if (data.Length != w * h)
+                throw new ArgumentException($"Length of data (${data.Length}) did not match width * height of the texture (${w * h}).", nameof(data));
+            SetData(id, new Rectangle(0, 0, w, h), data);
+        }
+
         /// <inheritdoc />
         public abstract void SetData<TData>(int id, in Rectangle subRect, ReadOnlySpan<TData> data) where TData : struct;
 

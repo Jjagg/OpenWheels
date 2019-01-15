@@ -116,27 +116,14 @@ namespace OpenWheels.Veldrid
         }
 
         /// <inheritdoc/>
-        public unsafe override void SetData<T>(int id, ReadOnlySpan<T> data)
+        public override void SetData<T>(int id, in Rectangle subRect, ReadOnlySpan<T> data)
         {
             CheckDisposed();
 
             var tex = _textures[id];
             var bpp = tex.Format == PixelFormat.R8_UNorm ? 1 : 4;
             if (data.Length * Marshal.SizeOf<T>() != tex.Width * tex.Height * bpp)
-                throw new ArgumentException($"Length of data ({data.Length * Marshal.SizeOf<T>()}) did not match width * height * bpp of the texture ({tex.Width * tex.Height * bpp}).", nameof(data));
-
-            var byteSpan = MemoryMarshal.Cast<T, byte>(data);
-            CopyData(tex, byteSpan, 0, 0, tex.Width, tex.Height);
-        }
-
-        /// <inheritdoc/>
-        public override void SetData<T>(int id, in Rectangle subRect, ReadOnlySpan<T> data)
-        {
-            CheckDisposed();
-
-            var tex = _textures[id];
-            if (data.Length * Marshal.SizeOf<T>() != tex.Width * tex.Height)
-                throw new ArgumentException($"Length of data (${data.Length * Marshal.SizeOf<T>()}) did not match width * height of the texture (${tex.Width * tex.Height}).", nameof(data));
+                throw new ArgumentException($"Length of data (${data.Length * Marshal.SizeOf<T>()}) did not match width * height of the texture (${tex.Width * tex.Height * bpp}).", nameof(data));
 
             var byteSpan = MemoryMarshal.Cast<T, byte>(data);
             CopyData(tex, byteSpan, (uint) subRect.X, (uint) subRect.Y, (uint) subRect.Width, (uint) subRect.Height);

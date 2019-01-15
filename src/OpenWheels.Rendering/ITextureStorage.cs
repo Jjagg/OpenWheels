@@ -51,22 +51,15 @@ namespace OpenWheels.Rendering
         TextureFormat GetTextureFormat(int id);
 
         /// <summary>
-        /// Set the pixel data of a texture. Does nothing if there is no matching texture.
+        /// Set the pixel data of a texture. Data should be in row-major order. Does nothing if there is no matching texture.
         /// </summary>
         /// <param name="id">Id of the texture.</param>
         /// <param name="data">Pixel data to set to the texture.</param>
         /// <exception name="ArgumentException">If <see cref="data.Length"/> is not equal to <c>width * height * format.GetBytesPerPixel()</c> of the matching texture.</exception>
         void SetData<T>(int id, ReadOnlySpan<T> data) where T : struct;
-        /* TODO C# 8
-        {
-            (var w, var h) = GetTextureSize(id);
-            if (data.Length != w * h)
-                throw new ArgumentException($"Length of data (${data.Length}) did not match width * height of the texture (${w * h}).", nameof(data));
-            SetData(id, new Rectangle(0, 0, w, h), data);
-        }*/
 
         /// <summary>
-        /// Set the pixel data of a subregion of a texture. Does nothing if there is no matching texture.
+        /// Set the pixel data of a subregion of a texture. Data should be in row-major order. Does nothing if there is no matching texture.
         /// </summary>
         /// <param name="id">Id of the texture.</param>
         /// <param name="rectangle">The subregion within the texture to copy data to.</param>
