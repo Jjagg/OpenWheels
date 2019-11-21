@@ -17,7 +17,7 @@ namespace OpenWheels
     [TypeConverter(typeof(RectangleConverter))]
     [DataContract]
 #endif
-    public struct Rectangle
+    public readonly struct Rectangle
     {
         /// <summary>
         /// Rectangle with position and size of (0, 0).
@@ -35,7 +35,7 @@ namespace OpenWheels
 #if NETSTANDARD2_0
         [DataMember]
 #endif
-        public int X;
+        public readonly int X;
  
         /// <summary>
         /// Y coordinate of the rectangle.
@@ -43,7 +43,7 @@ namespace OpenWheels
 #if NETSTANDARD2_0
         [DataMember]
 #endif
-        public int Y;
+        public readonly int Y;
 
         /// <summary>
         /// Width of the rectangle.
@@ -51,7 +51,7 @@ namespace OpenWheels
 #if NETSTANDARD2_0
         [DataMember]
 #endif
-        public int Width;
+        public readonly int Width;
 
         /// <summary>
         /// Height of the rectangle.
@@ -59,79 +59,47 @@ namespace OpenWheels
 #if NETSTANDARD2_0
         [DataMember]
 #endif
-        public int Height;
+        public readonly int Height;
 
         /// <summary>
         /// Top of the rectangle. Same as <see cref="Y"/>.
         /// </summary>
-        public int Top
-        {
-            get => Y;
-            set => Y = value;
-        }
+        public int Top => Y;
 
         /// <summary>
         /// Bottom of the rectangle. Equal to <c><see cref="Y"/> + <see cref="Height"/></c>.
         /// </summary>
-        public int Bottom
-        {
-            get => Y + Height;
-            set => Height = value - Y;
-        }
+        public int Bottom => Y + Height;
 
         /// <summary>
         /// Left of the rectangle. Same as <see cref="X"/>.
         /// </summary>
-        public int Left
-        {
-            get => X;
-            set => X = value;
-        }
+        public int Left => X;
 
         /// <summary>
         /// Right of the rectangle. Equal to <c><see cref="X"/> + <see cref="Width"/></c>.
         /// </summary>
-        public int Right
-        {
-            get => X + Width;
-            set => Width = value - X;
-        }
+        public int Right => X + Width;
 
         /// <summary>
         /// Location of the top left corner of the rectangle.
         /// </summary>
-        public Point2 TopLeft
-        {
-            get => new Point2(Left, Top);
-            set { Left = value.X; Top = value.Y; }
-        }
+        public Point2 TopLeft => new Point2(Left, Top);
         
         /// <summary>
         /// Location of the top right corner of the rectangle.
         /// </summary>
-        public Point2 TopRight
-        {
-            get => new Point2(Right, Top);
-            set { Right = value.X; Top = value.Y; }
-        }
+        public Point2 TopRight => new Point2(Right, Top);
 
         /// <summary>
         /// Location of the bottom right corner of the rectangle.
         /// </summary>
-        public Point2 BottomRight
-        { 
-            get => new Point2(Right, Bottom);
-            set { Right = value.X; Bottom = value.Y; }
-        }
+        public Point2 BottomRight => new Point2(Right, Bottom);
 
         /// <summary>
         /// Location of the bottom left corner of the rectangle.
         /// </summary>
-        public Point2 BottomLeft
-        {
-            get => new Point2(Left, Bottom);
-            set { Left = value.X; Bottom = value.Y; }
-        }
+        public Point2 BottomLeft => new Point2(Left, Bottom);
         
         /// <summary>
         /// X coordinate of the center of the rectangle.
@@ -151,11 +119,7 @@ namespace OpenWheels
         /// <summary>
         /// Size of the rectangle.
         /// </summary>
-        public Size Size
-        {
-            get => new Size(Width, Height);
-            set { Width = value.Width; Height = value.Height; }
-        }
+        public Size Size => new Size(Width, Height);
 
         /// <summary>
         /// Half of the size of the rectangle.

@@ -41,7 +41,11 @@ namespace OpenWheels.Rendering
                 return default;
 
             var firstBounds = gms[0].Bounds;
-            var bounding = new RectangleF(firstBounds.X, firstBounds.Y, firstBounds.Width, firstBounds.Height);
+
+            var l = firstBounds.Left;
+            var t = firstBounds.Top;
+            var r = firstBounds.Right;
+            var b = firstBounds.Bottom;
 
             foreach (var gm in gms)
             {
@@ -53,17 +57,17 @@ namespace OpenWheels.Rendering
                 batcher.SetUvSprite(textureFont.Texture, gd.Bounds);
                 batcher.FillRect(rect, color);
 
-                if (gm.Bounds.Left < bounding.Left)
-                    bounding.Left = gm.Bounds.Left;
-                if (gm.Bounds.Top < bounding.Top)
-                    bounding.Top = gm.Bounds.Top;
-                if (gm.Bounds.Right > bounding.Right)
-                    bounding.Right = gm.Bounds.Right;
-                if (gm.Bounds.Bottom > bounding.Bottom)
-                    bounding.Bottom = gm.Bounds.Bottom;
+                if (gm.Bounds.Left < l)
+                    l = gm.Bounds.Left;
+                if (gm.Bounds.Top < t)
+                    t = gm.Bounds.Top;
+                if (gm.Bounds.Right > r)
+                    r = gm.Bounds.Right;
+                if (gm.Bounds.Bottom > b)
+                    b = gm.Bounds.Bottom;
             }
 
-            return bounding;
+            return RectangleF.FromExtremes(l, t, b, r);
         }
 
         private HorizontalAlignment ToHorizontalAlignment(TextAlignment horizontalAlignment)
