@@ -62,7 +62,7 @@ namespace Texture
                 batcher.SetTexture(checkerBoardTextureId);
 
                 // The Batcher API is stateful. Anything we render now will use the checkerboard texture.
-                // By default the UV coordinates 0, 0, 1, 1 are use, so our texture is stretched
+                // By default the UV coordinates 0, 0, 1, 1 are used, so our texture is stretched
                 batcher.FillRect(new RectangleF(50, 20, 100, 100), Color.White);
                 batcher.FillRect(new RectangleF(200, 20, 100, 200), Color.White);
 

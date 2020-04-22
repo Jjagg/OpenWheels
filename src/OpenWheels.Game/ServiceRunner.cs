@@ -27,8 +27,9 @@ namespace OpenWheels.Game
     /// implementation. If any of the operators are missing the compilation of the generated Lerp function will fail.
     /// The compiled Lerp function is cached.
     ///
-    /// All class instances needed by the service runner are retrieved from their respective shared <see cref="ObjectPool{T}"/>.false
+    /// All class instances needed by the service runner are retrieved from their respective shared <see cref="ObjectPool{T}"/>.
     /// </summary>
+    /// <seealso cref="IUpdatable"/>
     /// <seealso cref="ObjectPool{T}.Shared"/>
     public class ServiceRunner : IUpdatable
     {
@@ -186,7 +187,7 @@ namespace OpenWheels.Game
 
         #endregion
 
-        #region Run Timer
+        #region Coroutines
 
         /// <summary>
         /// Run a coroutine. The yielded <see cref="TimeSpan"/> indicates the delay to the next call.
@@ -221,8 +222,12 @@ namespace OpenWheels.Game
             _coroutines.Add(cr);
         }
 
+        #endregion
+
+        #region Timers
+
         /// <summary>
-        /// Start a timer and run a method when it finishes.
+        /// Start a timer.
         /// </summary>
         /// <param name="seconds">Duration of the timer in seconds.</param>
         /// <param name="ctx">Context to set to avoid closures.</param>
@@ -234,7 +239,7 @@ namespace OpenWheels.Game
         }
 
         /// <summary>
-        /// Start a timer and run a method every frame while it's running.
+        /// Start a timer.
         /// </summary>
         /// <param name="seconds">Duration of the timer in seconds.</param>
         /// <param name="ctx">Context to set to avoid closures.</param>
@@ -246,7 +251,7 @@ namespace OpenWheels.Game
         }
 
         /// <summary>
-        /// Start a timer and run a method every frame while it's running and another method when it's finished or canceled.
+        /// Start a timer.
         /// </summary>
         /// <param name="seconds">Duration of the timer in seconds.</param>
         /// <param name="ctx">Context to set to avoid closures.</param>
@@ -259,7 +264,7 @@ namespace OpenWheels.Game
         }
 
         /// <summary>
-        /// Start a timer and run a method when it finishes.
+        /// Start a timer.
         /// </summary>
         /// <param name="seconds">Duration of the timer in seconds.</param>
         /// <param name="finish">Method to run when the timer finishes.</param>
@@ -270,7 +275,7 @@ namespace OpenWheels.Game
         }
 
         /// <summary>
-        /// Start a timer and run a method every frame while it's running.
+        /// Start a timer.
         /// </summary>
         /// <param name="seconds">Duration of the timer in seconds.</param>
         /// <param name="update">Method to run every frame while the timer is running.</param>
@@ -281,7 +286,7 @@ namespace OpenWheels.Game
         }
 
         /// <summary>
-        /// Start a timer and run a method every frame while it's running and another method when it's finished or canceled.
+        /// Start a timer.
         /// </summary>
         /// <param name="seconds">Duration of the timer in seconds.</param>
         /// <param name="update">Method to run every frame while the timer is running.</param>
@@ -293,7 +298,7 @@ namespace OpenWheels.Game
         }
 
         /// <summary>
-        /// Start a timer and run a method when it finishes.
+        /// Start a timer.
         /// </summary>
         /// <param name="duration">Duration of the timer.</param>
         /// <param name="ctx">Context to set to avoid closures.</param>
@@ -305,7 +310,7 @@ namespace OpenWheels.Game
         }
 
         /// <summary>
-        /// Start a timer and run a method every frame while it's running.
+        /// Start a timer.
         /// </summary>
         /// <param name="duration">Duration of the timer.</param>
         /// <param name="ctx">Context to set to avoid closures.</param>
@@ -317,7 +322,7 @@ namespace OpenWheels.Game
         }
 
         /// <summary>
-        /// Start a timer and run a method every frame while it's running and another method when it's finished or canceled.
+        /// Start a timer.
         /// </summary>
         /// <param name="duration">Duration of the timer.</param>
         /// <param name="ctx">Context to set to avoid closures.</param>
@@ -332,7 +337,7 @@ namespace OpenWheels.Game
         }
 
         /// <summary>
-        /// Start a timer and run a method when it finishes.
+        /// Start a timer.
         /// </summary>
         /// <param name="duration">Duration of the timer.</param>
         /// <param name="seconds">Duration of the timer in seconds.</param>
@@ -344,7 +349,7 @@ namespace OpenWheels.Game
         }
 
         /// <summary>
-        /// Start a timer and run a method every frame while it's running.
+        /// Start a timer.
         /// </summary>
         /// <param name="duration">Duration of the timer.</param>
         /// <param name="seconds">Duration of the timer in seconds.</param>
@@ -356,7 +361,7 @@ namespace OpenWheels.Game
         }
 
         /// <summary>
-        /// Start a timer and run a method every frame while it's running and another method when it's finished or canceled.
+        /// Start a timer.
         /// </summary>
         /// <param name="duration">Duration of the timer.</param>
         /// <param name="seconds">Duration of the timer in seconds.</param>
@@ -379,7 +384,7 @@ namespace OpenWheels.Game
         /// </summary>
         /// <remarks>
         /// This overload dynamically generates and compiles a Lerp method for the type T using Add(T, T),
-        /// Subtract(T, T) and Mutliply(float, T) operators.
+        /// Subtract(T, T) and Multiply(float, T) operators.
         /// If the type of the field does not implement these operators this function call will fail.
         /// You can add a custom Lerp function as an additional parameter to use another overload and bypass
         /// the dynamic Lerp generation.
@@ -401,7 +406,7 @@ namespace OpenWheels.Game
         /// </summary>
         /// <remarks>
         /// This overload dynamically generates and compiles a Lerp method for the type T using Add(T, T),
-        /// Subtract(T, T) and Mutliply(float, T) operators.
+        /// Subtract(T, T) and Multiply(float, T) operators.
         /// If the type of the field does not implement these operators this function call will fail.
         /// You can add a custom Lerp function as an additional parameter to use another overload and bypass
         /// the dynamic Lerp generation.
@@ -424,7 +429,7 @@ namespace OpenWheels.Game
         /// </summary>
         /// <remarks>
         /// This overload dynamically generates and compiles a Lerp method for the type T using Add(T, T),
-        /// Subtract(T, T) and Mutliply(float, T) operators.
+        /// Subtract(T, T) and Multiply(float, T) operators.
         /// If the type of the field does not implement these operators this function call will fail.
         /// You can add a custom Lerp function as an additional parameter to use another overload and bypass
         /// the dynamic Lerp generation.
@@ -446,7 +451,7 @@ namespace OpenWheels.Game
         /// </summary>
         /// <remarks>
         /// This overload dynamically generates and compiles a Lerp method for the type T using Add(T, T),
-        /// Subtract(T, T) and Mutliply(float, T) operators.
+        /// Subtract(T, T) and Multiply(float, T) operators.
         /// If the type of the field does not implement these operators this function call will fail.
         /// You can add a custom Lerp function as an additional parameter to use another overload and bypass
         /// the dynamic Lerp generation.
@@ -485,7 +490,7 @@ namespace OpenWheels.Game
         /// </summary>
         /// <remarks>
         /// This overload dynamically generates and compiles a Lerp method for the type T using Add(T, T),
-        /// Subtract(T, T) and Mutliply(float, T) operators.
+        /// Subtract(T, T) and Multiply(float, T) operators.
         /// If the type of the field does not implement these operators this function call will fail.
         /// You can add a custom Lerp function as an additional parameter to use another overload and bypass
         /// the dynamic Lerp generation.
@@ -509,7 +514,7 @@ namespace OpenWheels.Game
         /// </summary>
         /// <remarks>
         /// This overload dynamically generates and compiles a Lerp method for the type T using Add(T, T),
-        /// Subtract(T, T) and Mutliply(float, T) operators.
+        /// Subtract(T, T) and Multiply(float, T) operators.
         /// If the type of the field does not implement these operators this function call will fail.
         /// You can add a custom Lerp function as an additional parameter to use another overload and bypass
         /// the dynamic Lerp generation.
@@ -574,7 +579,7 @@ namespace OpenWheels.Game
         #endregion
 
         /// <summary>
-        /// Update all registered <see cref="IUpdatable"/> implementations, all coroutines and all timers.
+        /// Update all registered <see cref="IUpdatable"/> implementations, all coroutines and all timers (in that order).
         /// </summary>
         /// <param name="delta">Time since the last update call.</param>
         public void Update(TimeSpan delta)
