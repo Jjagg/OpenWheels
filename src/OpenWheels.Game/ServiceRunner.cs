@@ -74,9 +74,7 @@ namespace OpenWheels.Game
             public void Set(TimeSpan duration, Action<TimerData> update, Action finish, Action<TimerData> canceled)
             {
                 Data = ObjectPool<TimerData>.Shared.Get();
-                Data.Canceled = false;
-                Data.Duration = duration;
-                Data.Elapsed = TimeSpan.Zero;
+                Data.Reset(duration);
                 _update = update;
                 _finish = finish;
                 _canceled = canceled;
@@ -84,19 +82,19 @@ namespace OpenWheels.Game
 
             public override void Update(TimeSpan delta)
             {
-                Data.Delta = delta;
+                if (IsCanceled || IsDone)
+                    return;
+
+                Data.Advance(delta);
+                _update?.Invoke(Data);
 
                 if (IsCanceled)
                 {
                     _canceled?.Invoke(Data);
                 }
-                else
+                else if (IsDone)
                 {
-                    Data.Elapsed += delta;
-                    _update?.Invoke(Data);
-
-                    if (IsDone)
-                        _finish?.Invoke();
+                    _finish?.Invoke();
                 }
 
                 if (IsCanceled || IsDone)
@@ -117,9 +115,7 @@ namespace OpenWheels.Game
             public void Set(TimeSpan duration, Action<TimerData, T> update, Action<T> finish, Action<TimerData, T> canceled, T context)
             {
                 Data = ObjectPool<TimerData>.Shared.Get();
-                Data.Canceled = false;
-                Data.Duration = duration;
-                Data.Elapsed = TimeSpan.Zero;
+                Data.Reset(duration);
                 _update = update;
                 _finish = finish;
                 _canceled = canceled;
@@ -128,19 +124,19 @@ namespace OpenWheels.Game
 
             public override void Update(TimeSpan delta)
             {
-                Data.Delta = delta;
+                if (IsCanceled || IsDone)
+                    return;
+
+                Data.Advance(delta);
+                _update?.Invoke(Data, _context);
 
                 if (IsCanceled)
                 {
                     _canceled?.Invoke(Data, _context);
                 }
-                else
+                else if (IsDone)
                 {
-                    Data.Elapsed += delta;
-                    _update?.Invoke(Data, _context);
-
-                    if (IsDone)
-                        _finish?.Invoke(_context);
+                    _finish?.Invoke(_context);
                 }
 
                 if (IsCanceled || IsDone)

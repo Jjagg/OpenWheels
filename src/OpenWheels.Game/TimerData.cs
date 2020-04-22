@@ -10,24 +10,24 @@ namespace OpenWheels.Game
         /// <summary>
         /// Duration of the timer.
         /// </summary>
-        public TimeSpan Duration { get; set; }
+        public TimeSpan Duration { get; private set; }
 
         /// <summary>
         /// Elapsed time since the timer was started.
         /// </summary>
-        public TimeSpan Elapsed { get; set; }
+        public TimeSpan Elapsed { get; private set; }
 
         /// <summary>
         /// Delta time of the last update.
         /// </summary>
-        public TimeSpan Delta { get; set; }
+        public TimeSpan Delta { get; private set; }
 
         /// <summary>
         /// Get or set if the timer is canceled. 
         /// A canceled timer will be removed and its cancel method will be called on the next update
         /// of the <see cref="ServiceRunner" /> that runs it.
         /// </summary>
-        public bool Canceled { get; set; }
+        public bool Canceled { get; private set; }
 
         /// <summary>
         /// Normalized value in the [0, 1] range that indicates how much time has elapsed relative to the total duration of the timer.
@@ -44,6 +44,25 @@ namespace OpenWheels.Game
         /// </summary>
         public TimerData()
         {
+        }
+
+        /// <summary>
+        /// Reset the timer and give it a new duration
+        /// </summary>
+        public void Reset(TimeSpan duration)
+        {
+            Canceled = false;
+            Elapsed = TimeSpan.Zero;
+            Duration = duration;
+        }
+
+        /// <summary>
+        /// Advance the elapsed time by the given timespan.
+        /// </summary>
+        public void Advance(TimeSpan timeSpan)
+        {
+            Delta = timeSpan;
+            Elapsed += timeSpan;
         }
     }
 }
